@@ -13,19 +13,20 @@ on:
      - 'version.inc'
      - 'localization/**'
      - 'resources/**'
-     - ".github/workflows/build_*.yml"
+     - ".github/workflows/*.yml"
      - 'flatpak/**'
 
   pull_request:
     branches:
      - main
+     - master
      - release/*
     paths:
      - 'deps/**'
      - 'src/**'
      - '**/CMakeLists.txt'
      - 'version.inc'
-     - ".github/workflows/build_*.yml"
+     - ".github/workflows/*.yml"
      - 'BuildLinux.sh'
      - 'build_release_vs2022.bat'
      - 'build_release_macos.sh'
