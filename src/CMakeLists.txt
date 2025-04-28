@@ -50,8 +50,21 @@ if (SLIC3R_GUI)
             find_package(wxWidgets 3.1 REQUIRED COMPONENTS base core adv html gl aui net media webview)
         endif ()
     else ()
+        find_package(wxWidgets 3.0 QUIET)
+        if(wxWidgets_FOUND)
+            # 打印 wxWidgets 版本号
+            message(STATUS "找到 wxWidgets，版本号: ${wxWidgets_VERSION}")
+        else()
+            message(STATUS "未找到 wxWidgets，请检查安装和配置。")
+        endif()
         find_package(wxWidgets 3.1 QUIET)
-
+        if(wxWidgets_FOUND)
+            # 打印 wxWidgets 版本号
+            message(STATUS "找到 wxWidgets，版本号: ${wxWidgets_VERSION}")
+        else()
+            message(STATUS "未找到 wxWidgets，请检查安装和配置。")
+        endif()
+        find_package(wxWidgets 3.2 QUIET)
         if(wxWidgets_FOUND)
             # 打印 wxWidgets 版本号
             message(STATUS "找到 wxWidgets，版本号: ${wxWidgets_VERSION}")
