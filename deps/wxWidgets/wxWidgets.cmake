@@ -17,6 +17,8 @@ else ()
     set(_wx_edge "-DwxUSE_WEBVIEW_EDGE=OFF")
 endif ()
 
+message(STATUS "building wxwidgets")
+
 # Note: The flatpak build builds wxwidgets separately due to CI size constraints.
 # ANY CHANGES MADE IN HERE MUST ALSO BE REFLECTED IN `flatpak/io.github.SoftFever.OrcaSlicer.yml`.
 # ** THIS INCLUDES BUILD ARGS. **

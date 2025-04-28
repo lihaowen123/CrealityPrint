@@ -301,6 +301,7 @@ include(CGAL/CGAL.cmake)
 include(NLopt/NLopt.cmake)
 include(Assimp/Assimp.cmake)
 
+message(STATUS "include ending")
 
 # I *think* 1.1 is used for *just* md5 hashing?
 # 3.1 has everything in the right place, but the md5 funcs used are deprecated
@@ -339,6 +340,7 @@ set(WXWIDGETS_PKG "")
     include(wxWidgets/wxWidgets.cmake)
     set(WXWIDGETS_PKG "dep_wxWidgets")
 # endif()
+message(STATUS "setting wxwidgets")
 
 set(FREETYPE_PKG "")
 if(NOT FREETYPE_FOUND)
@@ -350,6 +352,7 @@ include(OCCT/OCCT.cmake)
 include(OpenCV/OpenCV.cmake)
 include(aliyun-oss-cpp-sdk/aliyun-oss-cpp-sdk.cmake)
 include(breakpad/breakpad.cmake)
+message(STATUS "setting dep_list")
 set(_dep_list
     dep_Boost
     dep_TBB
