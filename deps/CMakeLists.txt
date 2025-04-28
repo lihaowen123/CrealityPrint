@@ -268,112 +268,112 @@ set(WXWIDGETS_PKG "dep_wxWidgets")
 # endif()
 message(STATUS "setting wxwidgets")
 
-set(ZLIB_PKG "")
-if (NOT ZLIB_FOUND) 
-    include(ZLIB/ZLIB.cmake)
-    set(ZLIB_PKG dep_ZLIB)
-endif ()
-set(PNG_PKG "")
-if (NOT PNG_FOUND) 
-    include(PNG/PNG.cmake)
-    set(PNG_PKG dep_PNG)
-endif ()
-set(EXPAT_PKG "")
-find_package(EXPAT)
-if (NOT EXPAT_FOUND) 
-    include(EXPAT/EXPAT.cmake)
-    set(EXPAT_PKG dep_EXPAT)
-endif ()
+# set(ZLIB_PKG "")
+# if (NOT ZLIB_FOUND) 
+#     include(ZLIB/ZLIB.cmake)
+#     set(ZLIB_PKG dep_ZLIB)
+# endif ()
+# set(PNG_PKG "")
+# if (NOT PNG_FOUND) 
+#     include(PNG/PNG.cmake)
+#     set(PNG_PKG dep_PNG)
+# endif ()
+# set(EXPAT_PKG "")
+# find_package(EXPAT)
+# if (NOT EXPAT_FOUND) 
+#     include(EXPAT/EXPAT.cmake)
+#     set(EXPAT_PKG dep_EXPAT)
+# endif ()
 
-set(DEP_Boost_COMPONENTS system iostreams filesystem thread log locale regex date_time)
-include(Boost/Boost.cmake)
+# set(DEP_Boost_COMPONENTS system iostreams filesystem thread log locale regex date_time)
+# include(Boost/Boost.cmake)
 
-# The order of includes respects the dependencies between libraries
-include(Cereal/Cereal.cmake)
-include(Qhull/Qhull.cmake)
-include(GLEW/GLEW.cmake)
+# # The order of includes respects the dependencies between libraries
+# include(Cereal/Cereal.cmake)
+# include(Qhull/Qhull.cmake)
+# include(GLEW/GLEW.cmake)
 
-include(GLFW/GLFW.cmake)
-include(OpenCSG/OpenCSG.cmake)
+# include(GLFW/GLFW.cmake)
+# include(OpenCSG/OpenCSG.cmake)
 
-include(TBB/TBB.cmake)
+# include(TBB/TBB.cmake)
 
-include(Blosc/Blosc.cmake)
-include(OpenEXR/OpenEXR.cmake)
-include(OpenVDB/OpenVDB.cmake)
+# include(Blosc/Blosc.cmake)
+# include(OpenEXR/OpenEXR.cmake)
+# include(OpenVDB/OpenVDB.cmake)
 
-include(GMP/GMP.cmake)
-include(MPFR/MPFR.cmake)
-include(CGAL/CGAL.cmake)
+# include(GMP/GMP.cmake)
+# include(MPFR/MPFR.cmake)
+# include(CGAL/CGAL.cmake)
 
-include(NLopt/NLopt.cmake)
-include(Assimp/Assimp.cmake)
+# include(NLopt/NLopt.cmake)
+# include(Assimp/Assimp.cmake)
 
-message(STATUS "include ending")
+# message(STATUS "include ending")
 
-# I *think* 1.1 is used for *just* md5 hashing?
-# 3.1 has everything in the right place, but the md5 funcs used are deprecated
-# a grep across the repo shows it is used for other things
-# TODO: update openssl and everything that uses <openssl/md5.h> 
-set(OPENSSL_PKG "")
-if(NOT OPENSSL_FOUND)
-    include(OpenSSL/OpenSSL.cmake)
-    set(OPENSSL_PKG dep_OpenSSL)
-endif()
+# # I *think* 1.1 is used for *just* md5 hashing?
+# # 3.1 has everything in the right place, but the md5 funcs used are deprecated
+# # a grep across the repo shows it is used for other things
+# # TODO: update openssl and everything that uses <openssl/md5.h> 
+# set(OPENSSL_PKG "")
+# if(NOT OPENSSL_FOUND)
+#     include(OpenSSL/OpenSSL.cmake)
+#     set(OPENSSL_PKG dep_OpenSSL)
+# endif()
 
-# we don't want to load a "wrong" openssl when loading curl
-# so, just don't even bother 
-# ...i think this is how it works? change if wrong
-set(CURL_PKG "")
-if (NOT OPENSSL_FOUND OR NOT CURL_FOUND)
-    include(CURL/CURL.cmake)
-    set(CURL_PKG dep_CURL)
-endif ()
+# # we don't want to load a "wrong" openssl when loading curl
+# # so, just don't even bother 
+# # ...i think this is how it works? change if wrong
+# set(CURL_PKG "")
+# if (NOT OPENSSL_FOUND OR NOT CURL_FOUND)
+#     include(CURL/CURL.cmake)
+#     set(CURL_PKG dep_CURL)
+# endif ()
 
-set(JPEG_PKG "")
-if (NOT JPEG_FOUND)
-    include(JPEG/JPEG.cmake)
-    set(JPEG_PKG dep_JPEG)
-endif()
+# set(JPEG_PKG "")
+# if (NOT JPEG_FOUND)
+#     include(JPEG/JPEG.cmake)
+#     set(JPEG_PKG dep_JPEG)
+# endif()
 
-set(TIFF_PKG "")
-if (NOT TIFF_FOUND)
-    include(TIFF/TIFF.cmake)
-    set(TIFF_PKG "dep_TIFF")
-endif()
+# set(TIFF_PKG "")
+# if (NOT TIFF_FOUND)
+#     include(TIFF/TIFF.cmake)
+#     set(TIFF_PKG "dep_TIFF")
+# endif()
 
-set(FREETYPE_PKG "")
-if(NOT FREETYPE_FOUND)
-    include(FREETYPE/FREETYPE.cmake)
-    set(FREETYPE_PKG "dep_FREETYPE") 
-endif()
+# set(FREETYPE_PKG "")
+# if(NOT FREETYPE_FOUND)
+#     include(FREETYPE/FREETYPE.cmake)
+#     set(FREETYPE_PKG "dep_FREETYPE") 
+# endif()
 
-include(OCCT/OCCT.cmake)
-include(OpenCV/OpenCV.cmake)
-include(aliyun-oss-cpp-sdk/aliyun-oss-cpp-sdk.cmake)
-include(breakpad/breakpad.cmake)
+# include(OCCT/OCCT.cmake)
+# include(OpenCV/OpenCV.cmake)
+# include(aliyun-oss-cpp-sdk/aliyun-oss-cpp-sdk.cmake)
+# include(breakpad/breakpad.cmake)
 message(STATUS "setting dep_list")
 set(_dep_list
     dep_wxWidgets
-    dep_Boost
-    dep_TBB
-    ${OPENSSL_PKG}
-    ${CURL_PKG}
-    dep_Cereal
-    dep_NLopt
-    dep_OpenVDB
-    dep_OpenCSG
-    dep_OpenCV
-    dep_CGAL
-    dep_GLFW
-    dep_OCCT
-    ${FREETYPE_PKG}
-    ${PNG_PKG}
-    ${ZLIB_PKG}
-    ${EXPAT_PKG}
-    dep_OSS
-    dep_BREAKPAD
-	dep_Assimp
+    # dep_Boost
+    # dep_TBB
+    # ${OPENSSL_PKG}
+    # ${CURL_PKG}
+    # dep_Cereal
+    # dep_NLopt
+    # dep_OpenVDB
+    # dep_OpenCSG
+    # dep_OpenCV
+    # dep_CGAL
+    # dep_GLFW
+    # dep_OCCT
+    # ${FREETYPE_PKG}
+    # ${PNG_PKG}
+    # ${ZLIB_PKG}
+    # ${EXPAT_PKG}
+    # dep_OSS
+    # dep_BREAKPAD
+	# dep_Assimp
     )
 
 if (MSVC)
