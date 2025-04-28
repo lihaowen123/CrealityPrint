@@ -285,29 +285,29 @@ if (NOT EXPAT_FOUND)
     set(EXPAT_PKG dep_EXPAT)
 endif ()
 
-# set(DEP_Boost_COMPONENTS system iostreams filesystem thread log locale regex date_time)
-# include(Boost/Boost.cmake)
+set(DEP_Boost_COMPONENTS system iostreams filesystem thread log locale regex date_time)
+include(Boost/Boost.cmake)
 
 # The order of includes respects the dependencies between libraries
-include(Cereal/Cereal.cmake)
-include(Qhull/Qhull.cmake)
-include(GLEW/GLEW.cmake)
+# include(Cereal/Cereal.cmake)
+# include(Qhull/Qhull.cmake)
+# include(GLEW/GLEW.cmake)
 
-include(GLFW/GLFW.cmake)
-include(OpenCSG/OpenCSG.cmake)
+# include(GLFW/GLFW.cmake)
+# include(OpenCSG/OpenCSG.cmake)
 
-include(TBB/TBB.cmake)
+# include(TBB/TBB.cmake)
 
-include(Blosc/Blosc.cmake)
-include(OpenEXR/OpenEXR.cmake)
-include(OpenVDB/OpenVDB.cmake)
+# include(Blosc/Blosc.cmake)
+# include(OpenEXR/OpenEXR.cmake)
+# include(OpenVDB/OpenVDB.cmake)
 
-include(GMP/GMP.cmake)
-include(MPFR/MPFR.cmake)
-include(CGAL/CGAL.cmake)
+# include(GMP/GMP.cmake)
+# include(MPFR/MPFR.cmake)
+# include(CGAL/CGAL.cmake)
 
-include(NLopt/NLopt.cmake)
-include(Assimp/Assimp.cmake)
+# include(NLopt/NLopt.cmake)
+# include(Assimp/Assimp.cmake)
 
 message(STATUS "include ending")
 
@@ -355,25 +355,25 @@ endif()
 message(STATUS "setting dep_list")
 set(_dep_list
     dep_wxWidgets
-    # dep_Boost
+    dep_Boost
     dep_TBB
     ${OPENSSL_PKG}
     ${CURL_PKG}
-    dep_Cereal
-    dep_NLopt
-    dep_OpenVDB
-    dep_OpenCSG
-    dep_OpenCV
-    dep_CGAL
-    dep_GLFW
-    dep_OCCT
+    # dep_Cereal
+    # dep_NLopt
+    # dep_OpenVDB
+    # dep_OpenCSG
+    # dep_OpenCV
+    # dep_CGAL
+    # dep_GLFW
+    # dep_OCCT
     ${FREETYPE_PKG}
     ${PNG_PKG}
     ${ZLIB_PKG}
     ${EXPAT_PKG}
-    # dep_OSS
-    # dep_BREAKPAD
-	# dep_Assimp
+    dep_OSS
+    dep_BREAKPAD
+	dep_Assimp
     )
 
 if (MSVC)
