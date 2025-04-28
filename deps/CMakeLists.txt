@@ -268,22 +268,22 @@ set(WXWIDGETS_PKG "dep_wxWidgets")
 # endif()
 message(STATUS "setting wxwidgets")
 
-# set(ZLIB_PKG "")
-# if (NOT ZLIB_FOUND) 
-#     include(ZLIB/ZLIB.cmake)
-#     set(ZLIB_PKG dep_ZLIB)
-# endif ()
-# set(PNG_PKG "")
-# if (NOT PNG_FOUND) 
-#     include(PNG/PNG.cmake)
-#     set(PNG_PKG dep_PNG)
-# endif ()
-# set(EXPAT_PKG "")
-# find_package(EXPAT)
-# if (NOT EXPAT_FOUND) 
-#     include(EXPAT/EXPAT.cmake)
-#     set(EXPAT_PKG dep_EXPAT)
-# endif ()
+set(ZLIB_PKG "")
+if (NOT ZLIB_FOUND) 
+    include(ZLIB/ZLIB.cmake)
+    set(ZLIB_PKG dep_ZLIB)
+endif ()
+set(PNG_PKG "")
+if (NOT PNG_FOUND) 
+    include(PNG/PNG.cmake)
+    set(PNG_PKG dep_PNG)
+endif ()
+set(EXPAT_PKG "")
+find_package(EXPAT)
+if (NOT EXPAT_FOUND) 
+    include(EXPAT/EXPAT.cmake)
+    set(EXPAT_PKG dep_EXPAT)
+endif ()
 
 # set(DEP_Boost_COMPONENTS system iostreams filesystem thread log locale regex date_time)
 # include(Boost/Boost.cmake)
@@ -368,9 +368,9 @@ set(_dep_list
     # dep_GLFW
     # dep_OCCT
     # ${FREETYPE_PKG}
-    # ${PNG_PKG}
-    # ${ZLIB_PKG}
-    # ${EXPAT_PKG}
+    ${PNG_PKG}
+    ${ZLIB_PKG}
+    ${EXPAT_PKG}
     # dep_OSS
     # dep_BREAKPAD
 	# dep_Assimp
