@@ -23,7 +23,8 @@ on:
 jobs:
   build_deps:
     name: Build Deps
-    if: inputs.build-deps-only || inputs.valid-cache != true
+    # if: inputs.build-deps-only || inputs.valid-cache != true
+    if: true
     runs-on: ${{ inputs.os }}
     env:
       date:

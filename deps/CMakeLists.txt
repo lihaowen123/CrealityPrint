@@ -44,6 +44,12 @@ set(DESTDIR "${CMAKE_CURRENT_BINARY_DIR}/destdir" CACHE PATH "Destination direct
 set(DEP_DOWNLOAD_DIR ${CMAKE_CURRENT_BINARY_DIR}/../DL_CACHE CACHE PATH "Path for downloaded source packages.")
 set(FLATPAK FALSE CACHE BOOL "Toggles various build settings for flatpak, like /usr/local in DESTDIR or not building wxwidgets")
 if (NOT FLATPAK)
+    message(STATUS "check FLATPAK is no FLATPAK")
+else() 
+    message(STATUS "check FLATPAK is has FLATPAK")
+endif()
+
+if (NOT FLATPAK)
     set(DESTDIR "${DESTDIR}/usr/local/")
 endif()
 
