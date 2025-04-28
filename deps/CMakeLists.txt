@@ -303,36 +303,36 @@ include(Assimp/Assimp.cmake)
 
 message(STATUS "include ending")
 
-# I *think* 1.1 is used for *just* md5 hashing?
-# 3.1 has everything in the right place, but the md5 funcs used are deprecated
-# a grep across the repo shows it is used for other things
-# TODO: update openssl and everything that uses <openssl/md5.h> 
-set(OPENSSL_PKG "")
-if(NOT OPENSSL_FOUND)
-    include(OpenSSL/OpenSSL.cmake)
-    set(OPENSSL_PKG dep_OpenSSL)
-endif()
+# # I *think* 1.1 is used for *just* md5 hashing?
+# # 3.1 has everything in the right place, but the md5 funcs used are deprecated
+# # a grep across the repo shows it is used for other things
+# # TODO: update openssl and everything that uses <openssl/md5.h> 
+# set(OPENSSL_PKG "")
+# if(NOT OPENSSL_FOUND)
+#     include(OpenSSL/OpenSSL.cmake)
+#     set(OPENSSL_PKG dep_OpenSSL)
+# endif()
 
-# we don't want to load a "wrong" openssl when loading curl
-# so, just don't even bother 
-# ...i think this is how it works? change if wrong
-set(CURL_PKG "")
-if (NOT OPENSSL_FOUND OR NOT CURL_FOUND)
-    include(CURL/CURL.cmake)
-    set(CURL_PKG dep_CURL)
-endif ()
+# # we don't want to load a "wrong" openssl when loading curl
+# # so, just don't even bother 
+# # ...i think this is how it works? change if wrong
+# set(CURL_PKG "")
+# if (NOT OPENSSL_FOUND OR NOT CURL_FOUND)
+#     include(CURL/CURL.cmake)
+#     set(CURL_PKG dep_CURL)
+# endif ()
 
-set(JPEG_PKG "")
-if (NOT JPEG_FOUND)
-    include(JPEG/JPEG.cmake)
-    set(JPEG_PKG dep_JPEG)
-endif()
+# set(JPEG_PKG "")
+# if (NOT JPEG_FOUND)
+#     include(JPEG/JPEG.cmake)
+#     set(JPEG_PKG dep_JPEG)
+# endif()
 
-set(TIFF_PKG "")
-if (NOT TIFF_FOUND)
-    include(TIFF/TIFF.cmake)
-    set(TIFF_PKG "dep_TIFF")
-endif()
+# set(TIFF_PKG "")
+# if (NOT TIFF_FOUND)
+#     include(TIFF/TIFF.cmake)
+#     set(TIFF_PKG "dep_TIFF")
+# endif()
 
 # flatpak builds wxwidgets separately 
 set(WXWIDGETS_PKG "")
@@ -342,16 +342,16 @@ set(WXWIDGETS_PKG "")
 # endif()
 message(STATUS "setting wxwidgets")
 
-set(FREETYPE_PKG "")
-if(NOT FREETYPE_FOUND)
-    include(FREETYPE/FREETYPE.cmake)
-    set(FREETYPE_PKG "dep_FREETYPE") 
-endif()
+# set(FREETYPE_PKG "")
+# if(NOT FREETYPE_FOUND)
+#     include(FREETYPE/FREETYPE.cmake)
+#     set(FREETYPE_PKG "dep_FREETYPE") 
+# endif()
 
-include(OCCT/OCCT.cmake)
-include(OpenCV/OpenCV.cmake)
-include(aliyun-oss-cpp-sdk/aliyun-oss-cpp-sdk.cmake)
-include(breakpad/breakpad.cmake)
+# include(OCCT/OCCT.cmake)
+# include(OpenCV/OpenCV.cmake)
+# include(aliyun-oss-cpp-sdk/aliyun-oss-cpp-sdk.cmake)
+# include(breakpad/breakpad.cmake)
 message(STATUS "setting dep_list")
 set(_dep_list
     # dep_Boost
