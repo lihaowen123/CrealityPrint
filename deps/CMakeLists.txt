@@ -329,10 +329,10 @@ endif()
 
 # flatpak builds wxwidgets separately 
 set(WXWIDGETS_PKG "")
-if (NOT FLATPAK)
+# if (NOT FLATPAK)
     include(wxWidgets/wxWidgets.cmake)
     set(WXWIDGETS_PKG "dep_wxWidgets")
-endif()
+# endif()
 
 set(FREETYPE_PKG "")
 if(NOT FREETYPE_FOUND)
