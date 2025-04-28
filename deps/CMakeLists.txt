@@ -296,7 +296,7 @@ endif ()
 # include(GLFW/GLFW.cmake)
 # include(OpenCSG/OpenCSG.cmake)
 
-# include(TBB/TBB.cmake)
+include(TBB/TBB.cmake)
 
 # include(Blosc/Blosc.cmake)
 # include(OpenEXR/OpenEXR.cmake)
@@ -311,24 +311,24 @@ endif ()
 
 # message(STATUS "include ending")
 
-# # I *think* 1.1 is used for *just* md5 hashing?
-# # 3.1 has everything in the right place, but the md5 funcs used are deprecated
-# # a grep across the repo shows it is used for other things
-# # TODO: update openssl and everything that uses <openssl/md5.h> 
-# set(OPENSSL_PKG "")
-# if(NOT OPENSSL_FOUND)
-#     include(OpenSSL/OpenSSL.cmake)
-#     set(OPENSSL_PKG dep_OpenSSL)
-# endif()
+# I *think* 1.1 is used for *just* md5 hashing?
+# 3.1 has everything in the right place, but the md5 funcs used are deprecated
+# a grep across the repo shows it is used for other things
+# TODO: update openssl and everything that uses <openssl/md5.h> 
+set(OPENSSL_PKG "")
+if(NOT OPENSSL_FOUND)
+    include(OpenSSL/OpenSSL.cmake)
+    set(OPENSSL_PKG dep_OpenSSL)
+endif()
 
-# # we don't want to load a "wrong" openssl when loading curl
-# # so, just don't even bother 
-# # ...i think this is how it works? change if wrong
-# set(CURL_PKG "")
-# if (NOT OPENSSL_FOUND OR NOT CURL_FOUND)
-#     include(CURL/CURL.cmake)
-#     set(CURL_PKG dep_CURL)
-# endif ()
+# we don't want to load a "wrong" openssl when loading curl
+# so, just don't even bother 
+# ...i think this is how it works? change if wrong
+set(CURL_PKG "")
+if (NOT OPENSSL_FOUND OR NOT CURL_FOUND)
+    include(CURL/CURL.cmake)
+    set(CURL_PKG dep_CURL)
+endif ()
 
 # set(JPEG_PKG "")
 # if (NOT JPEG_FOUND)
@@ -342,11 +342,11 @@ endif ()
 #     set(TIFF_PKG "dep_TIFF")
 # endif()
 
-# set(FREETYPE_PKG "")
-# if(NOT FREETYPE_FOUND)
-#     include(FREETYPE/FREETYPE.cmake)
-#     set(FREETYPE_PKG "dep_FREETYPE") 
-# endif()
+set(FREETYPE_PKG "")
+if(NOT FREETYPE_FOUND)
+    include(FREETYPE/FREETYPE.cmake)
+    set(FREETYPE_PKG "dep_FREETYPE") 
+endif()
 
 # include(OCCT/OCCT.cmake)
 # include(OpenCV/OpenCV.cmake)
@@ -356,9 +356,9 @@ message(STATUS "setting dep_list")
 set(_dep_list
     dep_wxWidgets
     # dep_Boost
-    # dep_TBB
-    # ${OPENSSL_PKG}
-    # ${CURL_PKG}
+    dep_TBB
+    ${OPENSSL_PKG}
+    ${CURL_PKG}
     # dep_Cereal
     # dep_NLopt
     # dep_OpenVDB
@@ -367,7 +367,7 @@ set(_dep_list
     # dep_CGAL
     # dep_GLFW
     # dep_OCCT
-    # ${FREETYPE_PKG}
+    ${FREETYPE_PKG}
     ${PNG_PKG}
     ${ZLIB_PKG}
     ${EXPAT_PKG}
