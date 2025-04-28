@@ -260,6 +260,14 @@ if(FLATPAK)
     find_package(CURL)
 endif()
 
+# flatpak builds wxwidgets separately 
+set(WXWIDGETS_PKG "")
+# if (NOT FLATPAK)
+include(wxWidgets/wxWidgets.cmake)
+set(WXWIDGETS_PKG "dep_wxWidgets")
+# endif()
+message(STATUS "setting wxwidgets")
+
 set(ZLIB_PKG "")
 if (NOT ZLIB_FOUND) 
     include(ZLIB/ZLIB.cmake)
@@ -333,14 +341,6 @@ if (NOT TIFF_FOUND)
     include(TIFF/TIFF.cmake)
     set(TIFF_PKG "dep_TIFF")
 endif()
-
-# flatpak builds wxwidgets separately 
-set(WXWIDGETS_PKG "")
-# if (NOT FLATPAK)
-    include(wxWidgets/wxWidgets.cmake)
-    set(WXWIDGETS_PKG "dep_wxWidgets")
-# endif()
-message(STATUS "setting wxwidgets")
 
 set(FREETYPE_PKG "")
 if(NOT FREETYPE_FOUND)
