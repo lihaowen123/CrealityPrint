@@ -286,7 +286,7 @@ if (NOT EXPAT_FOUND)
 endif ()
 
 set(DEP_Boost_COMPONENTS system iostreams filesystem thread log locale regex date_time)
-include(Boost/Boost.cmake)
+# include(Boost/Boost.cmake)
 
 # The order of includes respects the dependencies between libraries
 # include(Cereal/Cereal.cmake)
