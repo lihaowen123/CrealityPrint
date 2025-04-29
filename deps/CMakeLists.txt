@@ -291,24 +291,25 @@ include(Boost/Boost.cmake)
 
 # The order of includes respects the dependencies between libraries
 include(Cereal/Cereal.cmake)
-# include(Qhull/Qhull.cmake)
-# include(GLEW/GLEW.cmake)
 
-# include(GLFW/GLFW.cmake)
-# include(OpenCSG/OpenCSG.cmake)
+include(Qhull/Qhull.cmake)
+include(GLEW/GLEW.cmake)
+
+include(GLFW/GLFW.cmake)
+include(OpenCSG/OpenCSG.cmake)
 
 include(TBB/TBB.cmake)
 
-# include(Blosc/Blosc.cmake)
-# include(OpenEXR/OpenEXR.cmake)
-# include(OpenVDB/OpenVDB.cmake)
+include(Blosc/Blosc.cmake)
+include(OpenEXR/OpenEXR.cmake)
+include(OpenVDB/OpenVDB.cmake)
 
-# include(GMP/GMP.cmake)
-# include(MPFR/MPFR.cmake)
-# include(CGAL/CGAL.cmake)
+include(GMP/GMP.cmake)
+include(MPFR/MPFR.cmake)
+include(CGAL/CGAL.cmake)
 
-# include(NLopt/NLopt.cmake)
-# include(Assimp/Assimp.cmake)
+include(NLopt/NLopt.cmake)
+include(Assimp/Assimp.cmake)
 
 message(STATUS "include ending")
 
