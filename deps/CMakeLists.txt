@@ -287,7 +287,7 @@ if (NOT EXPAT_FOUND)
 endif ()
 
 # set(DEP_Boost_COMPONENTS system iostreams filesystem thread log locale regex date_time)
-# include(Boost/Boost.cmake)
+include(Boost/Boost.cmake)
 
 # The order of includes respects the dependencies between libraries
 # include(Cereal/Cereal.cmake)
@@ -360,7 +360,7 @@ message(STATUS "setting wxwidgets")
 message(STATUS "setting dep_list")
 set(_dep_list
     dep_wxWidgets
-#     # dep_Boost
+    dep_Boost
 #     dep_TBB
 #     ${OPENSSL_PKG}
 #     ${CURL_PKG}
@@ -372,10 +372,10 @@ set(_dep_list
 #     # dep_CGAL
 #     # dep_GLFW
 #     # dep_OCCT
-#     ${FREETYPE_PKG}
-#     ${PNG_PKG}
-#     ${ZLIB_PKG}
-#     ${EXPAT_PKG}
+    # ${FREETYPE_PKG}
+    # ${PNG_PKG}
+    # ${ZLIB_PKG}
+    # ${EXPAT_PKG}
 #     # dep_OSS
 #     # dep_BREAKPAD
 # 	# dep_Assimp
