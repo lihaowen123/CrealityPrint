@@ -357,9 +357,9 @@ message(STATUS "include ending")
 
 message(STATUS "setting wxwidgets")
 
-# message(STATUS "setting dep_list")
-# set(_dep_list
-#     dep_wxWidgets
+message(STATUS "setting dep_list")
+set(_dep_list
+    dep_wxWidgets
 #     # dep_Boost
 #     dep_TBB
 #     ${OPENSSL_PKG}
@@ -379,7 +379,7 @@ message(STATUS "setting wxwidgets")
 #     # dep_OSS
 #     # dep_BREAKPAD
 # 	# dep_Assimp
-#     )
+    )
 
 if (MSVC)
     # Experimental
