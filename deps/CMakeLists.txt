@@ -260,14 +260,6 @@ if(FLATPAK)
     find_package(CURL)
 endif()
 
-# flatpak builds wxwidgets separately 
-set(WXWIDGETS_PKG "")
-# if (NOT FLATPAK)
-include(wxWidgets/wxWidgets.cmake)
-set(WXWIDGETS_PKG "dep_wxWidgets")
-# endif()
-message(STATUS "setting wxwidgets")
-
 set(ZLIB_PKG "")
 if (NOT ZLIB_FOUND) 
     include(ZLIB/ZLIB.cmake)
@@ -286,7 +278,7 @@ if (NOT EXPAT_FOUND)
 endif ()
 
 set(DEP_Boost_COMPONENTS system iostreams filesystem thread log locale regex date_time)
-# include(Boost/Boost.cmake)
+include(Boost/Boost.cmake)
 
 # The order of includes respects the dependencies between libraries
 # include(Cereal/Cereal.cmake)
@@ -347,6 +339,14 @@ if(NOT FREETYPE_FOUND)
     include(FREETYPE/FREETYPE.cmake)
     set(FREETYPE_PKG "dep_FREETYPE") 
 endif()
+
+# flatpak builds wxwidgets separately 
+set(WXWIDGETS_PKG "")
+# if (NOT FLATPAK)
+include(wxWidgets/wxWidgets.cmake)
+set(WXWIDGETS_PKG "dep_wxWidgets")
+# endif()
+message(STATUS "setting wxwidgets")
 
 # include(OCCT/OCCT.cmake)
 # include(OpenCV/OpenCV.cmake)
