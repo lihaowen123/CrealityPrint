@@ -290,7 +290,7 @@ set(DEP_Boost_COMPONENTS system iostreams filesystem thread log locale regex dat
 include(Boost/Boost.cmake)
 
 # The order of includes respects the dependencies between libraries
-# include(Cereal/Cereal.cmake)
+include(Cereal/Cereal.cmake)
 # include(Qhull/Qhull.cmake)
 # include(GLEW/GLEW.cmake)
 
@@ -364,11 +364,11 @@ set(_dep_list
     dep_TBB
     ${OPENSSL_PKG}
     ${CURL_PKG}
-#     # dep_Cereal
-#     # dep_NLopt
-#     # dep_OpenVDB
-#     # dep_OpenCSG
-#     # dep_OpenCV
+    dep_Cereal
+    # dep_NLopt
+    # dep_OpenVDB
+    # dep_OpenCSG
+    # dep_OpenCV
 #     # dep_CGAL
 #     # dep_GLFW
 #     # dep_OCCT
