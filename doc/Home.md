@@ -1,4 +1,4 @@
-Welcome to the CrealityPrint WIKI!123
+Welcome to the CrealityPrint WIKI!
 
 We have divided it roughly into the following pages:
 
