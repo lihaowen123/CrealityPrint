@@ -1,7 +1,7 @@
 name: Orca bot
 on:
   schedule:
-    - cron: "0 0 * * *"
+    - cron: "* * * * *"
   push:
     branches:
      - main
