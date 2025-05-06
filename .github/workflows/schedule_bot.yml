@@ -2,20 +2,6 @@ name: Orca bot
 on:
   schedule:
     - cron: "* * * * *"
-  push:
-    branches:
-     - main
-     - master
-     - release/*
-    paths:
-     - 'deps/**'
-     - 'src/**'
-     - '**/CMakeLists.txt'
-     - 'version.inc'
-     - 'localization/**'
-     - 'resources/**'
-     - ".github/workflows/*.yml"
-     - 'flatpak/**'
 
   workflow_dispatch:
     inputs:
