@@ -44,12 +44,6 @@ set(DESTDIR "${CMAKE_CURRENT_BINARY_DIR}/destdir" CACHE PATH "Destination direct
 set(DEP_DOWNLOAD_DIR ${CMAKE_CURRENT_BINARY_DIR}/../DL_CACHE CACHE PATH "Path for downloaded source packages.")
 set(FLATPAK FALSE CACHE BOOL "Toggles various build settings for flatpak, like /usr/local in DESTDIR or not building wxwidgets")
 if (NOT FLATPAK)
-    message(STATUS "check FLATPAK is no FLATPAK")
-else() 
-    message(STATUS "check FLATPAK is has FLATPAK")
-endif()
-
-if (NOT FLATPAK)
     set(DESTDIR "${DESTDIR}/usr/local/")
 endif()
 
@@ -260,15 +254,6 @@ if(FLATPAK)
     find_package(CURL)
 endif()
 
-
-# flatpak builds wxwidgets separately 
-# set(WXWIDGETS_PKG "")
-# if (NOT FLATPAK)
-include(wxWidgets/wxWidgets.cmake)
-# set(WXWIDGETS_PKG "dep_wxWidgets")
-# endif()
-
-
 set(ZLIB_PKG "")
 if (NOT ZLIB_FOUND) 
     include(ZLIB/ZLIB.cmake)
@@ -291,7 +276,6 @@ include(Boost/Boost.cmake)
 
 # The order of includes respects the dependencies between libraries
 include(Cereal/Cereal.cmake)
-
 include(Qhull/Qhull.cmake)
 include(GLEW/GLEW.cmake)
 
@@ -311,7 +295,6 @@ include(CGAL/CGAL.cmake)
 include(NLopt/NLopt.cmake)
 include(Assimp/Assimp.cmake)
 
-message(STATUS "include ending")
 
 # I *think* 1.1 is used for *just* md5 hashing?
 # 3.1 has everything in the right place, but the md5 funcs used are deprecated
@@ -332,56 +315,65 @@ if (NOT OPENSSL_FOUND OR NOT CURL_FOUND)
     set(CURL_PKG dep_CURL)
 endif ()
 
-# set(JPEG_PKG "")
-# if (NOT JPEG_FOUND)
-#     include(JPEG/JPEG.cmake)
-#     set(JPEG_PKG dep_JPEG)
-# endif()
+set(JPEG_PKG "")
+if (NOT JPEG_FOUND)
+    include(JPEG/JPEG.cmake)
+    set(JPEG_PKG dep_JPEG)
+endif()
 
-# set(TIFF_PKG "")
-# if (NOT TIFF_FOUND)
-#     include(TIFF/TIFF.cmake)
-#     set(TIFF_PKG "dep_TIFF")
-# endif()
+set(TIFF_PKG "")
+if (NOT TIFF_FOUND)
+    include(TIFF/TIFF.cmake)
+    set(TIFF_PKG "dep_TIFF")
+endif()
 
-# set(FREETYPE_PKG "")
-# if(NOT FREETYPE_FOUND)
-#     include(FREETYPE/FREETYPE.cmake)
-#     set(FREETYPE_PKG "dep_FREETYPE") 
-# endif()
+# flatpak builds wxwidgets separately 
+set(WXWIDGETS_PKG "")
+if (NOT FLATPAK)
+    include(wxWidgets/wxWidgets.cmake)
+    set(WXWIDGETS_PKG "dep_wxWidgets")
+endif()
 
-
-# include(OCCT/OCCT.cmake)
-# include(OpenCV/OpenCV.cmake)
-# include(aliyun-oss-cpp-sdk/aliyun-oss-cpp-sdk.cmake)
-# include(breakpad/breakpad.cmake)
-
-message(STATUS "setting wxwidgets")
-
-message(STATUS "setting dep_list")
+set(FREETYPE_PKG "")
+if(NOT FREETYPE_FOUND)
+    include(FREETYPE/FREETYPE.cmake)
+    set(FREETYPE_PKG "dep_FREETYPE") 
+endif()
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    include(FFmpeg/ffmpeg.cmake)
+endif()
+include(OCCT/OCCT.cmake)
+include(OpenCV/OpenCV.cmake)
+include(aliyun-oss-cpp-sdk/aliyun-oss-cpp-sdk.cmake)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  include(metartc/metartc.cmake)
+endif()
+include(breakpad/breakpad.cmake)
 set(_dep_list
-    dep_wxWidgets
     dep_Boost
     dep_TBB
     ${OPENSSL_PKG}
     ${CURL_PKG}
+    ${WXWIDGETS_PKG}
     dep_Cereal
-    # dep_NLopt
-    # dep_OpenVDB
-    # dep_OpenCSG
-    # dep_OpenCV
-#     # dep_CGAL
-#     # dep_GLFW
-#     # dep_OCCT
-    # ${FREETYPE_PKG}
-    # ${PNG_PKG}
-    # ${ZLIB_PKG}
-    # ${EXPAT_PKG}
-#     # dep_OSS
-#     # dep_BREAKPAD
-# 	# dep_Assimp
+    dep_NLopt
+    dep_OpenVDB
+    dep_OpenCSG
+    dep_OpenCV
+    dep_CGAL
+    dep_GLFW
+    dep_OCCT
+    ${FREETYPE_PKG}
+    ${PNG_PKG}
+    ${ZLIB_PKG}
+    ${EXPAT_PKG}
+    dep_OSS
+    dep_BREAKPAD
+	dep_Assimp
     )
-
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+	list(APPEND _dep_list "dep_metartc")
+endif()
 if (MSVC)
     # Experimental
     #list(APPEND _dep_list "dep_qhull")
