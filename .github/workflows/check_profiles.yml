@@ -47,8 +47,8 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: |
           curl -LJO https://github.com/lihaowen123/CrealityPrint/releases/download/tools/creality_preset.zip
-          unzip ./orca_custom_preset_tests.zip -d ${{ github.workspace }}/resources/profiles
-          ./OrcaSlicer_profile_validator -p ${{ github.workspace }}/resources/profiles -l 2
+          unzip ./creality_preset.zip -d ${{ github.workspace }}/resources/profiles
+          ./creality_preset -p ${{ github.workspace }}/resources/profiles -l 2
 
 
 
