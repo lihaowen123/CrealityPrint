@@ -18,8 +18,7 @@ msgstr ""
 "X-Generator: Poedit 3.5\n"
 
 msgid "Assembly"
-msgstr "组合
-体"
+msgstr "组合体"
 
 msgid "Undefined"
 msgstr "未定义"
