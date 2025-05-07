@@ -106,6 +106,7 @@ jobs:
         run: |
             mkdir -p ${{ github.workspace }}/deps/build
             mkdir -p ${{ github.workspace }}/deps/build/destdir
+            ls
             sudo ./BuildLinux.sh -ur
             sudo chown $USER -R ./
             ./BuildLinux.sh -dr
