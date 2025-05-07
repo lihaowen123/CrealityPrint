@@ -11,6 +11,7 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #endif
 #include <imgui/imgui_internal.h>
+#include "libslic3r/Model.hpp"
 namespace Slic3r {
 namespace GUI {
 
@@ -23,6 +24,66 @@ GLGizmoMeshBoolean::GLGizmoMeshBoolean(GLCanvas3D& parent, const std::string& ic
 
 GLGizmoMeshBoolean::~GLGizmoMeshBoolean() 
 {
+}
+
+void GLGizmoMeshBoolean::set_src_volume(ModelVolume* mv)
+{
+    if (!mv)
+    {
+        m_src.reset();
+        return;
+    }
+
+    if (mv == m_tool.mv) {
+        //set_tool_volume(m_src.mv);
+        return;
+    }
+
+    m_src.mv = mv;
+    m_src.trafo = mv->get_matrix();
+    m_src.volume_idx = -1;
+    const auto& volumes = mv->get_object()->volumes;
+    auto it = std::find(volumes.begin(), volumes.end(), mv);
+    assert(it != volumes.end());
+    if (it != volumes.end())
+        m_src.volume_idx = std::distance(volumes.begin(), it);
+
+    if (m_src.mv == m_tool.mv)
+        m_tool.reset();
+
+    m_selecting_state = MeshBooleanSelectingState::SelectTool;
+}
+
+void GLGizmoMeshBoolean::set_tool_volume(ModelVolume* mv)
+{
+    if (!mv)
+    {
+        m_tool.reset();
+        return;
+    }
+
+    if (mv == m_src.mv)
+    {
+        //set_src_volume(m_tool.mv);
+        return;
+    }
+
+    m_tool.mv = mv;
+    m_tool.trafo = mv->get_matrix();
+    m_tool.volume_idx = -1;
+    const auto& volumes = mv->get_object()->volumes;
+    auto it = std::find(volumes.begin(), volumes.end(), mv);
+    assert(it != volumes.end());
+    if (it != volumes.end())
+        m_tool.volume_idx = std::distance(volumes.begin(), it);
+}
+
+bool GLGizmoMeshBoolean::is_selection_valid(const Selection& selection)
+{
+    int object_idx = selection.get_object_idx();
+    int size = selection.get_volume_idxs().size();
+    //selection.is_single_full_object()
+    return size >= 1 && (m_current_obj_idx != -1 ? m_current_obj_idx == object_idx : true);
 }
 
 bool GLGizmoMeshBoolean::gizmo_event(SLAGizmoEventType action, const Vec2d& mouse_position, bool shift_down, bool alt_down, bool control_down) 
@@ -67,17 +128,14 @@ bool GLGizmoMeshBoolean::gizmo_event(SLAGizmoEventType action, const Vec2d& mous
         if (closest_hit == Vec3f::Zero() && closest_normal == Vec3f::Zero())
             return true;
 
+
         if (get_selecting_state() == MeshBooleanSelectingState::SelectTool) {
-            m_tool.trafo = mo->volumes[closest_hit_mesh_id]->get_matrix();
-            m_tool.volume_idx = closest_hit_mesh_id;
             set_tool_volume(mo->volumes[closest_hit_mesh_id]);
             return true;
         }
+
         if (get_selecting_state() == MeshBooleanSelectingState::SelectSource) {
-            m_src.trafo = mo->volumes[closest_hit_mesh_id]->get_matrix();
-            m_src.volume_idx = closest_hit_mesh_id;
             set_src_volume(mo->volumes[closest_hit_mesh_id]);
-            m_selecting_state = MeshBooleanSelectingState::SelectTool;
             return true;
         }
     }
@@ -116,21 +174,76 @@ std::string GLGizmoMeshBoolean::on_get_name() const
     return _u8L("Mesh Boolean");
 }
 
+void GLGizmoMeshBoolean::handle_object_list_changed(Selection& selection, bool& needUpdate)
+{
+    auto set_state = [=](EState state) {
+        m_state = state;
+        on_set_state();
+    };
+
+    needUpdate = false;
+    if (selection.is_single_volume_or_modifier()) {
+        const GLVolume* v = selection.get_first_volume();
+        if (v == NULL) {
+            set_state(EState::Off);
+            return;
+        }
+
+        int id     = v->volume_idx();
+        int obj_id = v->object_idx();
+        if (obj_id != m_current_obj_idx) {
+            needUpdate = true;
+            set_state(EState::On);
+        }
+
+        // int curr = current_obj_idx;
+        Model& model = wxGetApp().model();
+        if (obj_id >= 0 && obj_id < model.objects.size()) {
+            const ModelObject* mo = model.objects[obj_id];
+            // m_c->selection_info()->model_object();
+            if (get_selecting_state() == MeshBooleanSelectingState::SelectTool) {
+                set_tool_volume(mo->volumes[id]);
+            }
+
+            if (get_selecting_state() == MeshBooleanSelectingState::SelectSource) {
+                set_src_volume(mo->volumes[id]);
+            }
+        }
+
+    } else if (selection.is_single_full_object()) {
+        set_state(EState::On);
+        needUpdate = true;
+    } else {
+        set_state(EState::Off);
+        needUpdate = true;
+    }
+}
+
 bool GLGizmoMeshBoolean::on_is_activable() const
 {
-    return m_parent.get_selection().is_single_full_instance() && m_parent.get_selection().get_volume_idxs().size() > 1;
+    const Selection& selection = m_parent.get_selection();
+    bool is_single_full_instance = selection.is_single_full_instance();
+    int size = selection.get_volume_idxs().size();
+    return (selection.is_single_full_instance() && selection.get_volume_idxs().size() > 1) || m_current_obj_idx >= 0;
 }
 
 void GLGizmoMeshBoolean::on_render()
 {
-    if (m_parent.get_selection().get_object_idx() < 0)
+    const Selection& selection = m_parent.get_selection();
+    if (selection.get_object_idx() < 0)
         return;
     static ModelObject* last_mo = nullptr;
-    ModelObject* curr_mo = m_parent.get_selection().get_model()->objects[m_parent.get_selection().get_object_idx()];
+    ModelObject* curr_mo = selection.get_model()->objects[selection.get_object_idx()];
     if (last_mo != curr_mo) {
         last_mo = curr_mo;
-        m_src.reset();
-        m_tool.reset();
+        ModelObject* sobj        = m_src.mv ? m_src.mv->get_object() : NULL;
+        bool         src_changed = sobj != curr_mo;
+        if (m_src.mv && (m_src.mv->get_object() != curr_mo))
+            m_src.reset();
+        ModelObject* tobj         = m_tool.mv ? m_tool.mv->get_object() : NULL;
+        bool         tool_changed = tobj != curr_mo;
+        if (m_tool.mv && (m_tool.mv->get_object() != curr_mo))
+            m_tool.reset();
         m_operation_mode = MeshBooleanOperation::Union;
         m_selecting_state = MeshBooleanSelectingState::SelectSource;
         return;
@@ -139,18 +252,44 @@ void GLGizmoMeshBoolean::on_render()
     BoundingBoxf3 src_bb;
     BoundingBoxf3 tool_bb;
     const ModelObject* mo = m_c->selection_info()->model_object();
-    const ModelInstance* mi = mo->instances[m_parent.get_selection().get_instance_idx()];
-    const Selection& selection = m_parent.get_selection();
+    const ModelInstance* mi = mo->instances[selection.get_instance_idx()];
     const Selection::IndicesList& idxs = selection.get_volume_idxs();
-    for (unsigned int i : idxs) {
-        const GLVolume* volume = selection.get_volume(i);
-        if(volume->volume_idx() == m_src.volume_idx) {
-            src_bb = volume->transformed_convex_hull_bounding_box();
-        }
-        if (volume->volume_idx() == m_tool.volume_idx) {
-            tool_bb = volume->transformed_convex_hull_bounding_box();
+
+    Model& model = wxGetApp().model();
+    int m_id = -1;
+    for (int i = 0; i < model.objects.size(); ++i)
+    {
+        if (model.objects[i] == mo)
+        {
+            m_id = i;
+            break;
         }
     }
+    int sv_id = -1;
+    int tv_id = -1;
+    for (int i = 0; i < mo->volumes.size(); ++i) {
+        if (mo->volumes[i] == m_tool.mv) {
+            tv_id = i;
+        }
+        if (mo->volumes[i] == m_src.mv) {
+            sv_id = i;
+        }
+    }
+    int i_id = -1;
+    for (int i = 0; i < mo->instances.size(); ++i) {
+        if (mo->instances[i] == mi) {
+            i_id = i;
+            break;
+        }
+    }
+
+    auto get_volume_box = [](const Selection& selection, int m_id, int v_id, int iid, BoundingBoxf3& box) {
+        const GLVolume* volume = selection.get_volume(m_id, v_id, iid);
+        if (volume)
+            box = volume->transformed_convex_hull_bounding_box();
+    };
+    get_volume_box(selection, m_id, sv_id, i_id, src_bb);
+    get_volume_box(selection, m_id, tv_id, i_id, tool_bb);
 
     ColorRGB src_color = { 1.0f, 1.0f, 1.0f };
     ColorRGB tool_color = {0.0f, 150.0f / 255.0f, 136.0f / 255.0f};
@@ -160,23 +299,25 @@ void GLGizmoMeshBoolean::on_render()
 
 void GLGizmoMeshBoolean::on_set_state()
 {
-    if (m_state == EState::On) {
-        m_src.reset();
-        m_tool.reset();
-        bool m_diff_delete_input = false;
-        bool m_inter_delete_input = false;
-        m_operation_mode = MeshBooleanOperation::Union;
-        m_selecting_state = MeshBooleanSelectingState::SelectSource;
-    }
-    else if (m_state == EState::Off) {
-        m_src.reset();
-        m_tool.reset();
-        bool m_diff_delete_input = false;
-        bool m_inter_delete_input = false;
-        m_operation_mode = MeshBooleanOperation::Undef;
-        m_selecting_state = MeshBooleanSelectingState::Undef;
-        wxGetApp().notification_manager()->close_plater_warning_notification(warning_text);
-    }
+     if (m_state == EState::On) {
+         m_src.reset();
+         m_tool.reset();
+         bool m_diff_delete_input = false;
+         bool m_inter_delete_input = false;
+         m_operation_mode = MeshBooleanOperation::Union;
+         m_selecting_state = MeshBooleanSelectingState::SelectSource;
+         m_current_obj_idx = m_parent.get_selection().get_object_idx();
+     }
+     else if (m_state == EState::Off) {
+         m_src.reset();
+         m_tool.reset();
+         bool m_diff_delete_input = false;
+         bool m_inter_delete_input = false;
+         m_operation_mode = MeshBooleanOperation::Undef;
+         m_selecting_state = MeshBooleanSelectingState::Undef;
+         wxGetApp().notification_manager()->close_plater_warning_notification(warning_text);
+         m_current_obj_idx = -1;
+     }
 }
 
 CommonGizmosDataID GLGizmoMeshBoolean::on_get_requirements() const
@@ -210,86 +351,235 @@ void GLGizmoMeshBoolean::on_render_input_window(float x, float y, float bottom_l
 
     const int select_btn_length = 2 * ImGui::GetStyle().FramePadding.x + std::max(ImGui::CalcTextSize(("1 " + _u8L("selected")).c_str()).x, ImGui::CalcTextSize(_u8L("Select").c_str()).x);
 
-    auto selectable = [this](const std::string& label, bool selected, const ImVec2& size_arg) {
+    auto selectable = [this](const std::string& label, wchar_t icon_id, bool selected, const ImVec2& size_arg) {
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0,0 });
 
         ImGuiWindow* window = ImGui::GetCurrentWindow();
         const ImVec2 label_size = ImGui::CalcTextSize(label.c_str(), NULL, true);
         ImVec2 pos = window->DC.CursorPos;
-        ImVec2 size = ImGui::CalcItemSize(size_arg, label_size.x + ImGui::GetStyle().FramePadding.x * 2.0f, label_size.y + ImGui::GetStyle().FramePadding.y * 2.0f);
-        bool hovered = ImGui::IsMouseHoveringRect(pos, pos + size);
+        // ImVec2 size = ImGui::CalcItemSize(size_arg, label_size.x + ImGui::GetStyle().FramePadding.x * 2.0f, label_size.y + ImGui::GetStyle().FramePadding.y * 2.0f);
+        //ImVec2 size = ImGui::CalcItemSize(size_arg, 120, 40);
+        //ImVec2 size(26, 16);
+        float  view_scale = wxGetApp().plater()->get_current_canvas3D()->get_scale();
+        ImVec2 button_size(96 * view_scale, 43 * view_scale);
+        bool hovered = ImGui::IsMouseHoveringRect(pos, pos + button_size);
 
+        bool is_dark = wxGetApp().dark_mode();
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 1.f, 1.f, 0.f));
         if (selected || hovered) {
-            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 1.f, 1.f, 1.0f));
+            //ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 1.f, 1.f, icon_id == 0 ? 1.0f : 0.0f));
+            ImGui::PushStyleColor(ImGuiCol_Tab, ImVec4(1.f, 1.f, 1.f, 1.f));
             ImGui::PushStyleColor(ImGuiCol_Button, ImGuiWrapper::COL_CREALITY);
             
             ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImGuiWrapper::COL_CREALITY);
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGuiWrapper::COL_CREALITY);
-        }
-        else {
-            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.43f, 0.43f, 0.447f, 1.f));
+        } else {
+            if (is_dark) {
+                ImGui::PushStyleColor(ImGuiCol_Tab, ImVec4(1.f, 1.f, 1.f, 1.f));
+                ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1.f, 1.f, 1.f, 0.f));
+            }
+            else {
+                ImGui::PushStyleColor(ImGuiCol_Tab, ImVec4(0.f, 0.f, 0.f, 1.f));
+                ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1.f, 1.f, 1.f, 1.f));
+            }
             ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImGuiWrapper::COL_CREALITY);
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGuiWrapper::COL_CREALITY);
         }
 
-        float view_scale = wxGetApp().plater()->get_current_canvas3D()->get_scale();
-        bool res = ImGui::Button(label.c_str(), ImVec2(60*view_scale, 24*view_scale));
+        bool res = ImGui::Button(label.c_str(), button_size);
 
-        if (selected || hovered) {
-            ImGui::PopStyleColor(4);
+        if (ImGui::IsItemVisible() && icon_id != 0) {
+            ImVec2      button_pos = ImGui::GetItemRectMin();
+            ImDrawList* draw_list  = ImGui::GetWindowDrawList();
+
+            float y_offset = ImGui::GetStyle().FramePadding.y;
+            {
+                std::wstring icon     = icon_id + boost::nowide::widen("  ");
+                ImVec2       text_size = ImGui::CalcTextSize(into_u8(icon).c_str());
+                y_offset = button_size.y / 2.0 - text_size.y - 2;
+                ImVec2 text_pos(button_pos.x + (button_size.x - text_size.x) * 0.5f, button_pos.y + y_offset);
+                draw_list->AddText(text_pos, ImGui::GetColorU32(ImGuiCol_Tab), into_u8(icon).c_str());
+            }
+            {
+                const char* line      = label.data();
+                ImVec2      text_size = ImGui::CalcTextSize(line);
+                y_offset = button_size.y / 2.0 + 2;
+                ImVec2 text_pos(button_pos.x + (button_size.x - text_size.x) * 0.5f, button_pos.y + y_offset);
+                draw_list->AddText(text_pos, ImGui::GetColorU32(ImGuiCol_Tab), line);
+            }
         }
-        else {
-            ImGui::PopStyleColor(3);
-        }
+
+        //if (selected || hovered) {
+            ImGui::PopStyleColor(5);
+        //}
+        //else {
+        //    ImGui::PopStyleColor(4);
+        //}
 
         ImGui::PopStyleVar(1);
         return res;
     };
 
-    auto operate_button = [this](const wxString &label, bool enable) {
-        if (!enable) {
+    auto sub_selectable = [this](const std::string& label, bool selected, const ImVec2& size_arg) {
+        ImGuiWindow* window = ImGui::GetCurrentWindow();
+        if (window->SkipItems)
+            return false;
+        const float frame_padding = 2.0f;
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(frame_padding, frame_padding));
+
+        ImGuiContext&     g          = *GImGui;
+        const ImGuiStyle& style      = g.Style;
+        const ImGuiID     id         = window->GetID(label.data());
+        const ImVec2      label_size = ImGui::CalcTextSize(label.data(), NULL, true);
+
+        const float max_label = ImMax(label_size.x, label_size.y);
+
+        ImVec2 pos  = window->DC.CursorPos;
+        ImVec2 win_size = ImGui::GetContentRegionAvail();
+        float view_scale = wxGetApp().plater()->get_current_canvas3D()->get_scale();
+        ImVec2 size(60 * view_scale, 24 * view_scale);
+        //ImVec2 size = ImGui::CalcItemSize(size_arg, max_label + style.FramePadding.x * 2.0f, max_label + style.FramePadding.y * 2.0f);
+        
+        //pos.x = pos.x + win_size.x * 0.5 - size.x * 0.5; //in window top center
+        const ImRect bb(pos, pos + size);
+        ImGui::ItemSize(size, style.FramePadding.y);
+        if (!ImGui::ItemAdd(bb, id)) {
+            ImGui::PopStyleVar();
+            return false;
+        }
+
+        bool hovered, held;
+        bool pressed = ImGui::ButtonBehavior(bb, id, &hovered, &held);
+
+        float radius = size.x * 0.5f;
+        // Render
+        bool isDark = wxGetApp().dark_mode();
+        ImU32 normal = isDark ? ImGui::GetColorU32(IM_COL32(110, 110, 115, 255)) : ImGui::GetColorU32(IM_COL32(75, 75, 77, 125));
+        ImU32 hover = ImGui::GetColorU32(ImGuiWrapper::COL_CREALITY);
+        const ImU32 col = (!held && !hovered && !selected) ? normal : hover;
+        ImGui::RenderNavHighlight(bb, id);
+        ImGui::RenderFrame(bb.Min, bb.Max, col, false, radius);
+
+        ImVec2 center = ImVec2((bb.Min.x + bb.Max.x) * 0.5f, (bb.Min.y + bb.Max.y) * 0.5f);
+        /*window->DrawList->AddCircleFilled(center, radius, col, 32);*/
+
+        // Draw text
+        ImVec2 text_pos = ImVec2(center.x - label_size.x * 0.5f, center.y - label_size.y * 0.5f);
+        ImGui::RenderText(text_pos, label.data());
+
+        ImGui::PopStyleVar();
+
+        return held;
+    };
+
+    auto operate_button = [this](const wxString &label, const wxString &suffix, bool enable) {
+
+        ImGuiWindow* window = ImGui::GetCurrentWindow();
+        if (window->SkipItems)
+            return false;
+
+        const float frame_padding = 2.0f;
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(frame_padding, frame_padding));
+
+        ImGuiContext&     g          = *GImGui;
+        const ImGuiStyle& style      = g.Style;
+        wxString combindLabel = label + suffix;
+        const ImGuiID     id         = window->GetID(combindLabel.ToStdString().data());
+
+        //const float max_label = ImMax(label_size.x, label_size.y);
+
+        float  view_scale = wxGetApp().plater()->get_current_canvas3D()->get_scale();
+        ImVec2 size(100 * view_scale, 24 * view_scale);
+        float  windowWidth = ImGui::GetWindowWidth() - 2.0 * ImGui::GetStyle().WindowPadding.x;
+        ImVec2 pos  = window->DC.CursorPos;
+         pos.x += (windowWidth - size.x) * 0.5f;
+         //pos.x = 0;
+        ImVec2 win_size = ImGui::GetContentRegionAvail();
+        const ImRect bb(pos, pos + size);
+        ImGui::ItemSize(size, style.FramePadding.y);
+        if (!ImGui::ItemAdd(bb, id)) {
+            ImGui::PopStyleVar();
+            return false;
+        }
+
+        bool hovered, held;
+        bool pressed = ImGui::ButtonBehavior(bb, id, &hovered, &held);
+
+        float radius = size.x * 0.5f;
+        // Render
+        bool isDark = wxGetApp().dark_mode();
+        ImU32 normal;
+
+        if (!enable)
+        {
             ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-            if (m_is_dark_mode) {
-                ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(39.0f / 255.0f, 39.0f / 255.0f, 39.0f / 255.0f, 1.0f));
+            //normal = isDark ? ImGui::GetColorU32(IM_COL32(39.0f, 39.0f, 39.0f, 255)) : ImGui::GetColorU32(IM_COL32(230.0f, 230.0f, 230.0f, 125));
+            normal = ImGui::GetColorU32(IM_COL32(230.0f, 230.0f, 230.0f, 125));
+            if (isDark)
+            {
                 ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(108.0f / 255.0f, 108.0f / 255.0f, 108.0f / 255.0f, 1.0f));
             }
-            else {
-                ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(230.0f / 255.0f, 230.0f / 255.0f, 230.0f / 255.0f, 1.0f));
+            else 
+            {
                 ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(163.0f / 255.0f, 163.0f / 255.0f, 163.0f / 255.0f, 1.0f));
             }
         }
-
-        bool res = m_imgui->button(label.c_str());
-
-        if (!enable) {
-            ImGui::PopItemFlag();
-            ImGui::PopStyleColor(2);
+        else 
+        {
+            normal = isDark ? ImGui::GetColorU32(IM_COL32(110, 110, 115, 255)) : ImGui::GetColorU32(IM_COL32(75, 75, 77, 125));
         }
-        return res;
+        
+        ImU32 hover = ImGui::GetColorU32(ImGuiWrapper::COL_CREALITY);
+        const ImU32 col = (!held && !hovered) || !enable ? normal : hover;
+        ImGui::RenderNavHighlight(bb, id);
+        ImGui::RenderFrame(bb.Min, bb.Max, col, false, radius);
+
+        const ImVec2 label_size = ImGui::CalcTextSize(into_u8(label).data());
+        ImVec2 center = ImVec2((bb.Min.x + bb.Max.x) * 0.5f, (bb.Min.y + bb.Max.y) * 0.5f);
+        /*window->DrawList->AddCircleFilled(center, radius, col, 32);*/
+        //ImVec2 windowSize(bb.Max.x, bb.Max.y);
+
+        // Draw text
+
+        ImVec2 text_pos = ImVec2(center.x - label_size.x * 0.5f, center.y - label_size.y * 0.5f);
+        ImGui::RenderText(text_pos, into_u8(combindLabel).data());
+
+        if (!enable)
+        {
+            ImGui::PopItemFlag();
+            ImGui::PopStyleColor();
+        }
+        ImGui::PopStyleVar();
+
+        return enable && pressed;
     };
 
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0);
-    if (selectable(_u8L("Union"), m_operation_mode == MeshBooleanOperation::Union, ImVec2(max_tab_length, 0.0f))) {
+
+
+    float view_scale = wxGetApp().plater()->get_current_canvas3D()->get_scale();
+    bool  is_dark    = wxGetApp().dark_mode();
+    if (selectable(_u8L("Union"), is_dark ? ImGui::UnionBooleanDarkButton : ImGui::UnionBooleanButton, m_operation_mode == MeshBooleanOperation::Union, ImVec2(max_tab_length, 0.0f))) {
         m_operation_mode = MeshBooleanOperation::Union;
     }
     ImGui::SameLine(0, 0);
-    if (selectable(_u8L("Difference"), m_operation_mode == MeshBooleanOperation::Difference, ImVec2(max_tab_length, 0.0f))) {
+    if (selectable(_u8L("Difference"), is_dark ? ImGui::DifferenceBooleanDarkButton : ImGui::DifferenceBooleanButton, m_operation_mode == MeshBooleanOperation::Difference, ImVec2(max_tab_length, 0.0f))) {
         m_operation_mode = MeshBooleanOperation::Difference;
     }
     ImGui::SameLine(0, 0);
-    if (selectable(_u8L("Intersection"), m_operation_mode == MeshBooleanOperation::Intersection, ImVec2(max_tab_length, 0.0f))) {
+    if (selectable(_u8L("Intersection"), is_dark ? ImGui::IntersectionBooleanDarkButton : ImGui::IntersectionBooleanButton, m_operation_mode == MeshBooleanOperation::Intersection, ImVec2(max_tab_length, 0.0f))) {
         m_operation_mode = MeshBooleanOperation::Intersection;
     }
     ImGui::PopStyleVar();
 
-    ImGui::AlignTextToFramePadding();
+    // ImGui::AlignTextToFramePadding();
     std::string cap_str1 = m_operation_mode != MeshBooleanOperation::Difference ? _u8L("Part 1") : _u8L("Subtract from");
     m_imgui->text(cap_str1);
     ImGui::SameLine(max_cap_length);
     std::string select_src_str = m_src.mv ? "1 " + _u8L("selected") : _u8L("Select");
     select_src_str += "##select_source_volume";
     ImGui::PushItemWidth(select_btn_length);
-    if (selectable(select_src_str, m_selecting_state == MeshBooleanSelectingState::SelectSource, ImVec2(select_btn_length, 0)))
+    if (sub_selectable(select_src_str, m_selecting_state == MeshBooleanSelectingState::SelectSource, ImVec2(select_btn_length, 0)))
         m_selecting_state = MeshBooleanSelectingState::SelectSource;
     ImGui::PopItemWidth();
     if (m_src.mv) {
@@ -299,15 +589,18 @@ void GLGizmoMeshBoolean::on_render_input_window(float x, float y, float bottom_l
 
         ImGui::SameLine();
         //ImGui::PushStyleColor(ImGuiCol_Button, { 0, 0, 0, 0 });
-        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.43f, 0.43f, 0.447f, 1.f));
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImGuiWrapper::COL_CREALITY);
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGuiWrapper::COL_CREALITY);
+        //ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.43f, 0.43f, 0.447f, 1.f));
+        //ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImGuiWrapper::COL_CREALITY);
+        //ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGuiWrapper::COL_CREALITY);
         ImGui::PushStyleColor(ImGuiCol_Border, { 0, 0, 0, 0 });
-        if (ImGui::Button((into_u8(ImGui::TextSearchCloseIcon) + "##src").c_str(), {60, 24}))
+        std::string text = into_u8(ImGui::TextSearchCloseIcon);
+        ImVec2 size = ImGui::CalcTextSize(text.data()) + ImVec2(8, 5);
+        if (ImGui::Button((text + "##src").c_str(), size))
         {
             m_src.reset();
         }
-        ImGui::PopStyleColor(4);
+        //ImGui::PopStyleColor(4);
+        ImGui::PopStyleColor(1);
     }
 
     ImGui::AlignTextToFramePadding();
@@ -317,7 +610,7 @@ void GLGizmoMeshBoolean::on_render_input_window(float x, float y, float bottom_l
     std::string select_tool_str = m_tool.mv ? "1 " + _u8L("selected") : _u8L("Select");
     select_tool_str += "##select_tool_volume";
     ImGui::PushItemWidth(select_btn_length);
-    if (selectable(select_tool_str, m_selecting_state == MeshBooleanSelectingState::SelectTool, ImVec2(select_btn_length, 0)))
+    if (sub_selectable(select_tool_str, m_selecting_state == MeshBooleanSelectingState::SelectTool, ImVec2(select_btn_length, 0)))
         m_selecting_state = MeshBooleanSelectingState::SelectTool;
     ImGui::PopItemWidth();
     if (m_tool.mv) {
@@ -326,22 +619,30 @@ void GLGizmoMeshBoolean::on_render_input_window(float x, float y, float bottom_l
         m_imgui->text(m_tool.mv->name);
 
         ImGui::SameLine();
-        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.43f, 0.43f, 0.447f, 1.f));
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImGuiWrapper::COL_CREALITY);
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGuiWrapper::COL_CREALITY);
+
+        ImVec2 textPos  = ImGui::GetCursorPos();
+        ImVec2 nameSize = ImGui::CalcTextSize(m_tool.mv->name.data()) + ImVec2(8, 5);
+        textPos.x += nameSize.x;
+        ImGui::SetNextWindowPos(textPos);
+        //ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.43f, 0.43f, 0.447f, 1.f));
+        //ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImGuiWrapper::COL_CREALITY);
+        //ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGuiWrapper::COL_CREALITY);
         //ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetStyleColorVec4(ImGuiCol_Button));
-        ImGui::PushStyleColor(ImGuiCol_Border, { 0, 0, 0, 0 });
-        if (ImGui::Button((into_u8(ImGui::TextSearchCloseIcon) + "tool").c_str(), {60, 24}))
+        ImGui::PushStyleColor(ImGuiCol_Border, {0, 0, 0, 0});
+        std::string text = into_u8(ImGui::TextSearchCloseIcon) + "tool";
+        ImVec2 size = ImGui::CalcTextSize(text.data()) + ImVec2(8, 5);
+        if (ImGui::Button(text.c_str(), size))
         {
             m_tool.reset();
         }
-        ImGui::PopStyleColor(4);
+        //ImGui::PopStyleColor(4);
+        ImGui::PopStyleColor(1);
     }
 
     bool enable_button = m_src.mv && m_tool.mv;
     if (m_operation_mode == MeshBooleanOperation::Union)
     {
-        if (operate_button(_L("Union") + "##btn", enable_button)) {
+        if (operate_button(_L("Perform"), "##btn", enable_button)) {
             TriangleMesh temp_src_mesh = m_src.mv->mesh();
             temp_src_mesh.transform(m_src.trafo);
             TriangleMesh temp_tool_mesh = m_tool.mv->mesh();
@@ -359,7 +660,7 @@ void GLGizmoMeshBoolean::on_render_input_window(float x, float y, float bottom_l
     }
     else if (m_operation_mode == MeshBooleanOperation::Difference) {
         m_imgui->bbl_checkbox(_L("Delete input"), m_diff_delete_input);
-        if (operate_button(_L("Difference") + "##btn", enable_button)) {
+        if (operate_button(_L("Perform"), "##btn", enable_button)) {
             TriangleMesh temp_src_mesh = m_src.mv->mesh();
             temp_src_mesh.transform(m_src.trafo);
             TriangleMesh temp_tool_mesh = m_tool.mv->mesh();
@@ -377,7 +678,7 @@ void GLGizmoMeshBoolean::on_render_input_window(float x, float y, float bottom_l
     }
     else if (m_operation_mode == MeshBooleanOperation::Intersection){
         m_imgui->bbl_checkbox(_L("Delete input"), m_inter_delete_input);
-        if (operate_button(_L("Intersection") + "##btn", enable_button)) {
+        if (operate_button(_L("Perform"), "##btn", enable_button)) {
             TriangleMesh temp_src_mesh = m_src.mv->mesh();
             temp_src_mesh.transform(m_src.trafo);
             TriangleMesh temp_tool_mesh = m_tool.mv->mesh();
@@ -481,9 +782,12 @@ void GLGizmoMeshBoolean::generate_new_volume(bool delete_input, const TriangleMe
     std::swap(curr_model_object->volumes[m_src.volume_idx], curr_model_object->volumes.back());
     curr_model_object->delete_volume(curr_model_object->volumes.size() - 1);
 
+    //auto& selection = m_parent.get_selection();
+    int current_obj_idx = m_current_obj_idx;
     if (delete_input) {
         std::vector<ItemForDelete> items;
         auto obj_idx = m_parent.get_selection().get_object_idx();
+        m_parent.get_selection().add_object(current_obj_idx);
         items.emplace_back(ItemType::itVolume, obj_idx, m_tool.volume_idx);
         wxGetApp().obj_list()->delete_from_model_and_list(items);
     }
@@ -494,10 +798,14 @@ void GLGizmoMeshBoolean::generate_new_volume(bool delete_input, const TriangleMe
     //curr_model_object->sort_volumes(true);
 
     wxGetApp().plater()->update();
-    wxGetApp().obj_list()->select_item([this, new_volume]() {
+    wxGetApp().obj_list()->select_item([this, new_volume, current_obj_idx]() {
         wxDataViewItem sel_item;
 
-        wxDataViewItemArray items = wxGetApp().obj_list()->reorder_volumes_and_get_selection(m_parent.get_selection().get_object_idx(), [new_volume](const ModelVolume* volume) { return volume == new_volume; });
+        wxDataViewItemArray items =
+            wxGetApp().obj_list()->reorder_volumes_and_get_selection(/* m_parent.get_selection().get_object_idx() */ current_obj_idx,
+                                                                                             [new_volume](const ModelVolume* volume) {
+                                                                                                 return volume == new_volume;
+                                                                                             });
         if (!items.IsEmpty())
             sel_item = items.front();
 

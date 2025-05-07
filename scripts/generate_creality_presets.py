@@ -249,7 +249,8 @@ def process_machine_model_json(printerList, default_materials_map, out_path):
         nozzle_diameter = []
         for printer in printerList:
             nozzle_diameter.append(printer["nozzleDiameter"][0])
-            machine_model_data["default_bed_type"] = printer["bed_type"]
+            if "bed_type" in printer:
+                machine_model_data["default_bed_type"] = printer["bed_type"]
         machine_model_data["nozzle_diameter"] = ";".join(nozzle_diameter)
         print("--------------------",machine_model_data["default_bed_type"])
         out_machine_model_json_file = os.path.join(out_path,"machine",printerIntName+".json")
@@ -281,9 +282,9 @@ def process_process_json(printer,package_path, out_path):
                 basename = os.path.splitext(filename)[0]
                 printer_name = printer["name"].strip() +" "+printer["nozzleDiameter"][0]+" nozzle"
                 if basename.find("@") == -1:
-                    basename = basename+" @"+printer_name
+                    basename = basename.strip()+" @"+printer_name
                 else:
-                    basename = basename[0:basename.find("@")]+" @"+printer_name
+                    basename = basename[0:basename.find("@")].strip()+" @"+printer_name
                 process_data["name"] = basename
                 process_data["compatible_printers"] = [printer_name]
                 process_data["inherits"] = "fdm_process_creality_common"
@@ -346,7 +347,7 @@ def process_filament_json(printer,package_path, out_path):
                 machine_profile_name = printer["name"].strip()+" "+printer["nozzleDiameter"][0]+" nozzle"
                 basename = os.path.splitext(filename)[0]
                 basename = basename[0:basename.rfind("-")]
-                basename = basename+" @"+machine_profile_name
+                basename = basename.strip()+" @"+machine_profile_name
                 filament_data["name"] = basename
                 filament_map[filament_data["filament_id"]] = basename
 
@@ -355,10 +356,10 @@ def process_filament_json(printer,package_path, out_path):
                 filament_data["inherits"] = "fdm_filament_common"
                 filament_data["default_filament_colour"] = "\"\""
 
-                if "material_flow_dependent_temperature" in filament_data:
-                    del filament_data["material_flow_dependent_temperature"]
-                if "material_flow_temp_graph" in filament_data:
-                    del filament_data["material_flow_temp_graph"]
+                #if "material_flow_dependent_temperature" in filament_data:
+                #    del filament_data["material_flow_dependent_temperature"]
+                #if "material_flow_temp_graph" in filament_data:
+                #    del filament_data["material_flow_temp_graph"]
 
                 #删除空的key
                 for key in list(filament_data.keys()):

@@ -3,8 +3,9 @@
 #include "../TriangleMesh.hpp"
 #include "AssimpModel.hpp"
 #include <string>
-#include "../assimp/Importer.hpp"
-#include "../assimp/postprocess.h"
+#include "assimp/Importer.hpp"
+#include "assimp/postprocess.h"
+#include "assimp/scene.h"
 
 
 #ifdef _WIN32

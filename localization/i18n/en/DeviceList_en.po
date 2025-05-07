@@ -960,52 +960,18 @@ msgstr "The nozzle leveling sensor may be damaged or the wiping module may have 
 msgid "Z-axis homing issue,may have an external disturbance "
 msgstr "Z-axis homing issue,may have an external disturbance "
 
-msgid ""
-"[Printing] XY Motor: XY motor speed limit exceeded. The motor will be released. Please reduce the print speed or re-slice and print again.Z Motor: "
-"Z motor speed limit exceeded. The motor will be released. Please reduce the print speed or re-slice and print again.E Motor: Extruder speed limit "
-"exceeded. The motor will be released. Please reduce the print speed or re-slice and print again.[Not Printing] XY Motor: XY motor speed limit "
-"exceeded. The motor will be released. Please reduce the XY motor movement speed.Z Motor: Z motor speed limit exceeded. The motor will be released. "
-"Please reduce the Z motor movement speed.E Motor: Extruder speed limit exceeded. The motor will be released. Please reduce the extruder movement "
-"speed."
-msgstr ""
-"[Printing] XY Motor: XY motor speed limit exceeded. The motor will be released. Please reduce the print speed or re-slice and print again.Z Motor: "
-"Z motor speed limit exceeded. The motor will be released. Please reduce the print speed or re-slice and print again.E Motor: Extruder speed limit "
-"exceeded. The motor will be released. Please reduce the print speed or re-slice and print again.[Not Printing] XY Motor: XY motor speed limit "
-"exceeded. The motor will be released. Please reduce the XY motor movement speed.Z Motor: Z motor speed limit exceeded. The motor will be released. "
-"Please reduce the Z motor movement speed.E Motor: Extruder speed limit exceeded. The motor will be released. Please reduce the extruder movement "
-"speed."
+msgid "[Printing] XY Motor: XY motor speed limit exceeded. The motor will be released. Please reduce the print speed or re-slice and print again.Z Motor: Z motor speed limit exceeded. The motor will be released. Please reduce the print speed or re-slice and print again.E Motor: Extruder speed limit exceeded. The motor will be released. Please reduce the print speed or re-slice and print again.[Not Printing] XY Motor: XY motor speed limit exceeded. The motor will be released. Please reduce the XY motor movement speed.Z Motor: Z motor speed limit exceeded. The motor will be released. Please reduce the Z motor movement speed.E Motor: Extruder speed limit exceeded. The motor will be released. Please reduce the extruder movement speed."
+msgstr "[Printing] XY Motor: XY motor speed limit exceeded. The motor will be released. Please reduce the print speed or re-slice and print again.Z Motor: Z motor speed limit exceeded. The motor will be released. Please reduce the print speed or re-slice and print again.E Motor: Extruder speed limit exceeded. The motor will be released. Please reduce the print speed or re-slice and print again.[Not Printing] XY Motor: XY motor speed limit exceeded. The motor will be released. Please reduce the XY motor movement speed.Z Motor: Z motor speed limit exceeded. The motor will be released. Please reduce the Z motor movement speed.E Motor: Extruder speed limit exceeded. The motor will be released. Please reduce the extruder movement speed."
 
 msgid "[X/Y/E/Z1/Z2] step-servo position issue, please try again after resolving"
 msgstr "[X/Y/E/Z1/Z2] step-servo position issue, please try again after resolving"
 
-msgid ""
-"[Printing] XY Motor: An obstacle was detected during the extruder's movement. This print has been canceled and the motor is released.Z Motor: An "
-"obstacle was detected during the heated bed's movement. This print has been canceled and the motor is released.E Motor: An extrusion anomaly was "
-"detected, possibly a clog, tangle, or jam. Printing has been paused.[Not Printing] XY Motorstep-servo: An obstacle was detected during the nozzle's "
-"movement. The motor will be released.Z Motor: An obstacle was detected during the heated bed's movement. The motor will be released.E Motor: An "
-"extrusion anomaly was detected, possibly a clog, tangle, or jam. The motor will be released."
-msgstr ""
-"[Printing] XY Motor: An obstacle was detected during the extruder's movement. This print has been canceled and the motor is released.Z Motor: An "
-"obstacle was detected during the heated bed's movement. This print has been canceled and the motor is released.E Motor: An extrusion anomaly was "
-"detected, possibly a clog, tangle, or jam. Printing has been paused.[Not Printing] XY Motorstep-servo: An obstacle was detected during the nozzle's "
-"movement. The motor will be released.Z Motor: An obstacle was detected during the heated bed's movement. The motor will be released.E Motor: An "
-"extrusion anomaly was detected, possibly a clog, tangle, or jam. The motor will be released."
+msgid "[Printing] XY Motor: An obstacle was detected during the extruder's movement. This print has been canceled and the motor is released.Z Motor: An obstacle was detected during the heated bed's movement. This print has been canceled and the motor is released.E Motor: An extrusion anomaly was detected, possibly a clog, tangle, or jam. Printing has been paused.[Not Printing] XY Motorstep-servo: An obstacle was detected during the nozzle's movement. The motor will be released.Z Motor: An obstacle was detected during the heated bed's movement. The motor will be released.E Motor: An extrusion anomaly was detected, possibly a clog, tangle, or jam. The motor will be released."
+msgstr "[Printing] XY Motor: An obstacle was detected during the extruder's movement. This print has been canceled and the motor is released.Z Motor: An obstacle was detected during the heated bed's movement. This print has been canceled and the motor is released.E Motor: An extrusion anomaly was detected, possibly a clog, tangle, or jam. Printing has been paused.[Not Printing] XY Motorstep-servo: An obstacle was detected during the nozzle's movement. The motor will be released.Z Motor: An obstacle was detected during the heated bed's movement. The motor will be released.E Motor: An extrusion anomaly was detected, possibly a clog, tangle, or jam. The motor will be released."
 
-msgid ""
-"X Motor: X motor identification error detected. The motor wire may be connected improperly or the motor may be damaged.Y Motor: Y motor "
-"identification error detected. The motor wire may be connected improperly or the motor may be damaged.Z1 Motor: Z1 motor identification error "
-"detected. The motor wire may be connected improperly or the motor may be damaged.Z2 Motor: Z2 motor identification error detected. The motor wire "
-"may be connected improperly or the motor may be damaged.E Motor: Extruder motor identification error detected. The motor wire may be connected "
-"improperly or the motor may be damaged."
-msgstr ""
-"X Motor: X motor identification error detected. The motor wire may be connected improperly or the motor may be damaged.Y Motor: Y motor "
-"identification error detected. The motor wire may be connected improperly or the motor may be damaged.Z1 Motor: Z1 motor identification error "
-"detected. The motor wire may be connected improperly or the motor may be damaged.Z2 Motor: Z2 motor identification error detected. The motor wire "
-"may be connected improperly or the motor may be damaged.E Motor: Extruder motor identification error detected. The motor wire may be connected "
-"improperly or the motor may be damaged."
+msgid "X Motor: X motor identification error detected. The motor wire may be connected improperly or the motor may be damaged.Y Motor: Y motor identification error detected. The motor wire may be connected improperly or the motor may be damaged.Z1 Motor: Z1 motor identification error detected. The motor wire may be connected improperly or the motor may be damaged.Z2 Motor: Z2 motor identification error detected. The motor wire may be connected improperly or the motor may be damaged.E Motor: Extruder motor identification error detected. The motor wire may be connected improperly or the motor may be damaged."
+msgstr "X Motor: X motor identification error detected. The motor wire may be connected improperly or the motor may be damaged.Y Motor: Y motor identification error detected. The motor wire may be connected improperly or the motor may be damaged.Z1 Motor: Z1 motor identification error detected. The motor wire may be connected improperly or the motor may be damaged.Z2 Motor: Z2 motor identification error detected. The motor wire may be connected improperly or the motor may be damaged.E Motor: Extruder motor identification error detected. The motor wire may be connected improperly or the motor may be damaged."
 
-msgid "X/Y/Z/E axis step-servo motor initialization error, motor communication line may be connected incorrectly"
-msgstr "X/Y/Z/E axis step-servo motor initialization error, motor communication line may be connected incorrectly"
 
 msgid "communication issue, please try again after resolving."
 msgstr "communication issue, please try again after resolving."
@@ -1022,19 +988,11 @@ msgstr "System error."
 msgid "Feed issue , filament may be stuck from loader to CFS hub. Please resolve the issue and click the &quot;Retry&quot; button."
 msgstr "Feed issue , filament may be stuck from loader to CFS hub. Please resolve the issue and click the &quot;Retry&quot; button."
 
-msgid ""
-"Feed issue , filament may be blocked between the CFS hub and extruder filament detector. Please resolve the issue and click &quot;Retry&quot; "
-"button."
-msgstr ""
-"Feed issue , filament may be blocked between the CFS hub and extruder filament detector. Please resolve the issue and click &quot;Retry&quot; "
-"button."
+msgid "Feed issue , filament may be blocked between the CFS hub and extruder filament detector. Please resolve the issue and click &quot;Retry&quot; button."
+msgstr "Feed issue , filament may be blocked between the CFS hub and extruder filament detector. Please resolve the issue and click &quot;Retry&quot; button."
 
-msgid ""
-"Feed issue , filament may be jammed between the extruder sensor and the extruder gear. Please resolve the issue and click the &quot;Retry&quot; "
-"button."
-msgstr ""
-"Feed issue , filament may be jammed between the extruder sensor and the extruder gear. Please resolve the issue and click the &quot;Retry&quot; "
-"button."
+msgid "Feed issue , filament may be jammed between the extruder sensor and the extruder gear. Please resolve the issue and click the &quot;Retry&quot; button."
+msgstr "Feed issue , filament may be jammed between the extruder sensor and the extruder gear. Please resolve the issue and click the &quot;Retry&quot; button."
 
 msgid "Feed issue , filament may be stuck between the CFS hub sensor and the gear. Please resolve the issue and click the &quot;Retry&quot; button."
 msgstr "Feed issue , filament may be stuck between the CFS hub sensor and the gear. Please resolve the issue and click the &quot;Retry&quot; button."
@@ -1144,23 +1102,169 @@ msgstr "Filament Weight"
 msgid "Feed issue, filament failed to exit extruder.Please resolve and click 'Retry' button."
 msgstr "Feed issue, filament failed to exit extruder.Please resolve and click 'Retry' button."
 
-msgid "The device has not been added yet. You can add it by clicking the button below."
-msgstr "The device has not been added yet. You can add it by clicking the button below."
+msgid "The current printer's material rack consumables do not exist. Do you want to continue printing?"
+msgstr "The current printer's material rack consumables do not exist. Do you want to continue printing?"
 
-msgid "During device self-test, printing and sending files are not supported"
-msgstr "During device self-test, printing and sending files are not supported"
+msgid "Hotbed failed to return to the maximum Z-axis position or tilt calibration at this position failed,please try again after resolving."
+msgstr "Hotbed failed to return to the maximum Z-axis position or tilt calibration at this position failed,please try again after resolving."
 
-msgid "Scan the QR code below"
-msgstr "Scan the QR code below"
+msgid "Abnormal resistance in the Y-axis movement direction,  motor released. Fix issue and restart."
+msgstr "Abnormal resistance in the Y-axis movement direction,  motor released. Fix issue and restart."
 
-msgid "Download Creality Cloud App"
-msgstr "Download Creality Cloud App"
+msgid "Abnormal resistance under the hotbed, motor released. Fix issue and restart."
+msgstr "Abnormal resistance under the hotbed, motor released. Fix issue and restart."
 
-msgid "Add new device"
-msgstr "Add new device"
+msgid "Extruder extrusion anomaly, possible clog or blockage. motor released."
+msgstr "Extruder extrusion anomaly, possible clog or blockage. motor released."
 
-msgid "If you have already downloaded it"
-msgstr "If you have already downloaded it"
+msgid "Extruder speed limit exceeded. The motor will be released. Please reduce the extruder movement speed."
+msgstr "Extruder speed limit exceeded. The motor will be released. Please reduce the extruder movement speed."
 
-msgid "Open the Creality Cloud App"
-msgstr "Open the Creality Cloud App"
+msgid "Y motor identification error detected. The motor wire may be connected improperly or the motor may be damaged."
+msgstr "Y motor identification error detected. The motor wire may be connected improperly or the motor may be damaged."
+
+msgid "Z1 motor identification error detected. The motor wire may be connected improperly or the motor may be damaged."
+msgstr "Z1 motor identification error detected. The motor wire may be connected improperly or the motor may be damaged."
+
+msgid "Z2 motor identification error detected. The motor wire may be connected improperly or the motor may be damaged."
+msgstr "Z2 motor identification error detected. The motor wire may be connected improperly or the motor may be damaged."
+
+msgid "E motor identification error detected. The motor wire may be connected improperly or the motor may be damaged."
+msgstr "E motor identification error detected. The motor wire may be connected improperly or the motor may be damaged."
+
+msgid "[x or y or e] axis servo motor hardware abnormality/[z1 or z2] axis servo motor hardware abnormality, the platform plate will drop"
+msgstr "[x or y or e] axis servo motor hardware abnormality/[z1 or z2] axis servo motor hardware abnormality, the platform plate will drop"
+
+msgid "X/Y/Z/E axis step-servo motor initialization error, motor communication line may be connected incorrectly"
+msgstr "X/Y/Z/E axis step-servo motor initialization error, motor communication line may be connected incorrectly"
+
+msgid "Chamber heater fan abnormal, chamber heating closed."
+msgstr "Chamber heater fan abnormal, chamber heating closed."
+
+msgid "Belt tension module error, left side belt communication line may be connected improperly. "
+msgstr "Belt tension module error, left side belt communication line may be connected improperly."
+
+msgid "Belt tension module error, right side belt tension module not calibrated, please recalibrate the module."
+msgstr "Belt tension module error, right side belt tension module not calibrated, please recalibrate the module."
+
+msgid "Belt tension module error, left side belt tension module not calibrated, please recalibrate the module. "
+msgstr "Belt tension module error, left side belt tension module not calibrated, please recalibrate the module. "
+
+msgid "Belt tension module error, please troubleshoot and try recalibrating. "
+msgstr "Belt tension module error, please troubleshoot and try recalibrating."
+
+msgid "Belt tension timeout failure, please try retightening or restarting. "
+msgstr "Belt tension timeout failure, please try retightening or restarting. "
+
+msgid "Abnormal belt tensioning module, right belt tensioning module calibration value abnormal, please recalibrate the module."
+msgstr "Abnormal belt tensioning module, right belt tensioning module calibration value abnormal, please recalibrate the module."
+
+msgid "Abnormal belt tensioning module, left belt tensioning module calibration value abnormal, please recalibrate the module."
+msgstr "Abnormal belt tensioning module, left belt tensioning module calibration value abnormal, please recalibrate the module."
+
+msgid "Hotbed failed to reach the maximum position. Check for sensor issues or bed tilt.Please check and retry."
+msgstr "Hotbed failed to reach the maximum position. Check for sensor issues or bed tilt.Please check and retry."
+
+msgid "Abnormal heat break fan"
+msgstr "Abnormal heat break fan"
+
+msgid "MCU task scheduling failed, possibly due to high load or communication issues."
+msgstr "MCU task scheduling failed, possibly due to high load or communication issues."
+
+msgid "Extruder MCU temperature is too high, possibly due to high chamber temperature or delayed cooling of the extruder motherboard."
+msgstr "Extruder MCU temperature is too high, possibly due to high chamber temperature or delayed cooling of the extruder motherboard."
+
+msgid "Cutter not detected."
+msgstr "Cutter not detected."
+
+msgid "Feed issue, filament buffer failure. Please resolve and click \"Retry\" button."
+msgstr "Feed issue, filament buffer failure. Please resolve and click \"Retry\" button."
+
+msgid "Detected printing plate is missing, printing paused"
+msgstr "Detected printing plate is missing, printing paused"
+
+msgid "Detected printing plate is missing and foreign object on the printing plate, printing paused"
+msgstr "Detected printing plate is missing and foreign object on the printing plate, printing pause"
+
+msgid "Flow ratio calibration image anomaly, printing with default values."
+msgstr "Flow ratio calibration image anomaly, printing with default values."
+
+msgid "Flow ratio calibration failed, printing with default values."
+msgstr "Flow ratio calibration failed, printing with default values."
+
+msgid "Detected waste chute is block. "
+msgstr "Detected waste chute is block."
+
+msgid "Nozzle  camera failed to start, try restarting."
+msgstr "Nozzle  camera failed to start, try restarting."
+
+msgid "The five-way connection is occupied, please return the material first! "
+msgstr "The five-way connection is occupied, please return the material first! "
+
+msgid "The extruder is occupied and pre-loading cannot be performed."
+msgstr "The extruder is occupied and pre-loading cannot be performed."
+
+#~ msgid ""
+#~ "The device has not been added yet. You can add it by clicking the button "
+#~ "below."
+#~ msgstr ""
+#~ "The device has not been added yet. You can add it by clicking the button "
+#~ "below."
+
+#~ msgid ""
+#~ "During device self-test, printing and sending files are not supported"
+#~ msgstr ""
+#~ "During device self-test, printing and sending files are not supported"
+
+#~ msgid "Scan the QR code below"
+#~ msgstr "Scan the QR code below"
+
+#~ msgid "Download Creality Cloud App"
+#~ msgstr "Download Creality Cloud App"
+
+#~ msgid "Add new device"
+#~ msgstr "Add new device"
+
+#~ msgid "If you have already downloaded it"
+#~ msgstr "If you have already downloaded it"
+
+#~ msgid "Open the Creality Cloud App"
+#~ msgstr "Open the Creality Cloud App"
+
+#~ msgid "The object being printed does not support exclusion"
+#~ msgstr "The object being printed does not support exclusion"
+
+#~ msgid "There is no group yet. Click below to add a group."
+#~ msgstr "There is no group yet. Click below to add a group."
+
+#~ msgid ""
+#~ "Only the group is removed, and the devices in the group are moved to the "
+#~ "first group."
+#~ msgstr ""
+#~ "Only the group is removed, and the devices in the group are moved to the "
+#~ "first group."
+
+#~ msgid "Tip"
+#~ msgstr "Tip"
+
+#~ msgid "Refresh"
+#~ msgstr "Refresh"
+
+#~ msgid "Management Groups"
+#~ msgstr "Management Groups"
+
+#~ msgid "New group"
+#~ msgstr "New group"
+
+#~ msgid "Group name cannot be empty"
+#~ msgstr "Group name cannot be empty"
+
+#~ msgid "The current group name already exists"
+#~ msgstr "The current group name already exists"
+
+#~ msgid ""
+#~ "The current printer's material rack consumables do not exist. Do you want "
+#~ "to continue printing？"
+#~ msgstr ""
+#~ "The current printer's material rack consumables do not exist. Do you want "
+#~ "to continue printing？"

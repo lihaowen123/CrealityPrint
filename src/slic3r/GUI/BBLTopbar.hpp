@@ -79,6 +79,7 @@ private:
     wxMenuItem*       m_relationsItem{NULL};   
     wxAuiToolBarItem* m_relationsItem1{NULL};   
 
+    Label*            m_title_LabelItem = nullptr;
     wxAuiToolBarItem* m_title_item;
     wxAuiToolBarItem* m_account_item;
     wxAuiToolBarItem* m_model_store_item;

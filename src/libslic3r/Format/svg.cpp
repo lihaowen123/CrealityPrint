@@ -213,9 +213,9 @@ bool get_svg_profile(const char *path, std::vector<Element_Info> &element_infos,
             for (int i = 0; i < path_line_points.size(); ++i) {
                 ClipperLib::Path pt_path;
                 for (auto line_point : path_line_points[i]) { 
-                    pt_path.push_back(IntPoint(line_point.first.X() * scale_size, line_point.first.Y() * scale_size));
+                    pt_path.push_back(ClipperLib::IntPoint((ClipperLib::cInt)(line_point.first.X() * scale_size), (ClipperLib::cInt)(line_point.first.Y() * scale_size)));
                 }
-                pt_path.push_back(IntPoint(path_line_points[i].back().second.X() * scale_size, path_line_points[i].back().second.Y() * scale_size));
+                pt_path.push_back(ClipperLib::IntPoint((ClipperLib::cInt)(path_line_points[i].back().second.X() * scale_size), (ClipperLib::cInt)(path_line_points[i].back().second.Y() * scale_size)));
 
                 ClipperLib::Paths         out_paths;
                 ClipperLib::ClipperOffset co;

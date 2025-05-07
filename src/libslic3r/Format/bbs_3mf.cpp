@@ -1050,6 +1050,7 @@ void PlateData::parse_filament_info(GCodeProcessorResult *result)
         bool get_thumbnail(const std::string &filename, std::string &data);
         bool load_gcode_3mf_from_stream(std::istream & data, Model& model, PlateDataPtrs& plate_data_list, DynamicPrintConfig& config, Semver& file_version);
         unsigned int version() const { return m_version; }
+        bool check_3mf_model_config(const std::string& filename);
 
     private:
         void _destroy_xml_parser();
@@ -2224,6 +2225,149 @@ void PlateData::parse_filament_info(GCodeProcessorResult *result)
         }
 
         return true;
+    }
+
+
+    struct parser_state
+    {
+        bool in_build = false;
+        bool has_valid_objectid = false;
+    };
+
+    static void XMLCALL start_element_handler(void* userData, const XML_Char* name, const XML_Char** attrs)
+    {
+        auto* state = static_cast<parser_state*>(userData);
+        if(!state)
+            return ;
+
+        if (strcmp(name, "build") == 0)
+        {
+            state->in_build = true;
+        }
+        else if (state->in_build && strcmp(name, "item") == 0)
+        {
+            if(!attrs)
+                return ;
+            for (int i = 0; attrs[i] && attrs[i + 1]; i += 2)
+            {
+                if ((strcmp(attrs[i], "objectid") == 0) && (attrs[i + 1]) && (attrs[i + 1][0] != '\0'))
+                {
+                    state->has_valid_objectid = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    static void XMLCALL end_element_handler(void* userData, const XML_Char* name)
+    {
+        auto* state = static_cast<parser_state*>(userData);
+
+        if (strcmp(name, "build") == 0)
+        {
+            state->in_build = false;
+        }
+    }
+
+    bool _BBS_3MF_Importer::check_3mf_model_config(const std::string& filename)
+    {
+        // 1. 初始化ZIP读取器
+        mz_zip_archive archive;
+        mz_zip_zero_struct(&archive);
+
+        struct ZipCloser
+        {
+            mz_zip_archive* archive;
+            ~ZipCloser()
+            {
+                if (archive) mz_zip_reader_end(archive);
+            }
+        } closer{ &archive };
+
+        //if (!mz_zip_reader_init_file(&archive, filename1.c_str(), 0))
+
+        if (!open_zip_reader(&archive, filename))
+        {
+            return false;
+        }
+
+        // 2. 检查Metadata文件夹
+        bool has_metadata = false;
+        mz_uint num_entries = mz_zip_reader_get_num_files(&archive);
+
+        for (mz_uint i = 0; i < num_entries; ++i)
+        {
+            mz_zip_archive_file_stat stat;
+            if (mz_zip_reader_file_stat(&archive, i, &stat))
+            {
+                std::string entry_name(stat.m_filename);
+                std::replace(entry_name.begin(), entry_name.end(), '\\', '/');
+                if (boost::algorithm::istarts_with(entry_name, "Metadata/"))
+                {
+                    has_metadata = true;
+                    break;
+                }
+            }
+        }
+
+        // 3. 检查3dmodel.model文件
+        const char* model_file = "3D/3dmodel.model";
+        int file_index = mz_zip_reader_locate_file(&archive, model_file, nullptr, 0);
+        if (file_index < 0)
+        {
+            return false;
+        }
+
+        mz_zip_archive_file_stat stat;
+        if (!mz_zip_reader_file_stat(&archive, file_index, &stat))
+        {
+            return false;
+        }
+
+        // 4. XML解析
+        XML_Parser parser = XML_ParserCreate(nullptr);
+        if (!parser)
+        {
+            return false;
+        }
+
+        struct ParserCloser
+        {
+            XML_Parser parser;
+            ~ParserCloser()
+            {
+                if (parser) XML_ParserFree(parser);
+            }
+        } parser_closer{ parser };
+
+        parser_state state;
+        XML_SetUserData(parser, &state);
+        XML_SetElementHandler(parser, start_element_handler, end_element_handler);
+
+        // 检查解压大小是否合理,不超过 XML_Parser 的限制
+        if ((stat.m_uncomp_size <= 0) || (stat.m_uncomp_size > 100 * 1024 * 1024) || (stat.m_uncomp_size > INT_MAX))
+        {  
+            return false;
+        }
+
+        void* buffer = XML_GetBuffer(parser, (int)stat.m_uncomp_size);
+        if (!buffer)
+        {
+            return false;
+        }
+
+        if (!mz_zip_reader_extract_file_to_mem(&archive, model_file,
+            buffer, (size_t)stat.m_uncomp_size, 0))
+        {
+            return false;
+        }
+
+        if (!XML_ParseBuffer(parser, (int)stat.m_uncomp_size, 1))
+        {
+            return false;
+        }
+
+        return has_metadata && state.has_valid_objectid;
     }
 
     bool _BBS_3MF_Importer::_is_svg_shape_file(const std::string &name) const { 
@@ -8242,9 +8386,18 @@ void PlateData::parse_filament_info(GCodeProcessorResult *result)
         stream << "    <" << METADATA_TAG << " " << KEY_ATTR << "=\""
                << "FileVersion"
                << "\" " << VALUE_ATTR << "=\"" << fileVersion3mf << "\"/>\n";
+
+        std::string file_type_3mf = fileType3mf;
+        if(config.has("Application"))
+        {
+            const Slic3r::ConfigOptionString* application = config.opt<Slic3r::ConfigOptionString>("Application");
+            if(application)
+                file_type_3mf = application->value;
+        }
+
         stream << "    <" << METADATA_TAG << " " << KEY_ATTR << "=\""
                << "FileType"
-               << "\" " << VALUE_ATTR << "=\"" << fileType3mf << "\"/>\n";
+               << "\" " << VALUE_ATTR << "=\"" << file_type_3mf.c_str() << "\"/>\n";
         std::string date = Slic3r::Utils::utc_timestamp(Slic3r::Utils::get_current_time_utc());
         // keep only the date part of the string
         date = date.substr(0, 10);
@@ -8824,6 +8977,7 @@ private:
 bool load_bbs_3mf(const char* path, DynamicPrintConfig* config, ConfigSubstitutionContext* config_substitutions, Model* model, PlateDataPtrs* plate_data_list, std::vector<Preset*>* project_presets,
                     bool* is_bbl_3mf, Semver* file_version, Import3mfProgressFn proFn, LoadStrategy strategy, BBLProject *project, int plate_id)
 {
+    DEFINE_PERFORMANCE_TEST("Loading File");
     if (path == nullptr || config == nullptr || model == nullptr)
         return false;
 
@@ -8980,6 +9134,13 @@ bool has_other_changes(bool backup)
 {
     return _BBS_Backup_Manager::get().has_other_changes(backup);
 }
+
+bool check_3mf_model_config(const std::string& filename)
+{
+    _BBS_3MF_Importer importer;
+     return importer.check_3mf_model_config(filename);
+}
+
 
 SaveObjectGaurd::SaveObjectGaurd(ModelObject& object)
 {

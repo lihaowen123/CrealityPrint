@@ -23,9 +23,13 @@ namespace DM {
         void AddDevice(std::string group, Data& data);
         void RemoveDevice(std::string name);
         void EditDeiveName(std::string name, std::string nameNew);
+        void UpdateDevice(std::string address, Data& data);
         void AddGroup(std::string name, bool is_save=true);
         void RemoveGroup(std::string name);
         void EditGroupName(std::string name, std::string nameNew);
+        void remove2FirstGroup(std::string group);
+        void move2Group(std::string originGroup, std::string targetGroup, std::string address);
+        void sortGroup(std::vector<std::string> order = {"new group2", "22", "new group"});
         void SetMergeState(bool state);
         bool IsMergeState();
         nlohmann::json GetData();

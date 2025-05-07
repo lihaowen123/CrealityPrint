@@ -1,11 +1,12 @@
+#include "Auxiliary.hpp"
 #include "GUI_App.hpp"
 #include "InstanceCheck.hpp"
 #include "Plater.hpp"
 #include <boost/regex.hpp>
 
-#ifdef _WIN32
-  #include "MainFrame.hpp"
-#endif
+//#ifdef _WIN32
+#include "MainFrame.hpp"
+//#endif
 
 #include "libslic3r/Utils.hpp"
 #include "libslic3r/Config.hpp"
@@ -27,7 +28,11 @@
 #if __linux__
 #include <dbus/dbus.h> /* Pull in all of D-Bus headers. */
 #endif //__linux__
-
+#ifdef __WINDOWS__
+#ifdef _MSW_DARK_MODE
+#include "dark_mode.hpp"
+#endif // _MSW_DARK_MODE
+#endif //__WINDOWS__
 namespace Slic3r {
 
 #ifdef __APPLE__
@@ -69,12 +74,14 @@ namespace instance_check_internal
         for (int i = 1; i < argc; ++i) {
 			const std::string token = argv[i];
 			// Processing of boolean command line arguments shall match DynamicConfig::read_cli().
-			if (token == "--single-instance")
+			if (token == "--single-instance" || token == "crealityprintlink://open/")
 				ret.should_send = true;
 			else if (token == "--no-single-instance")
 				ret.should_send = false;
 			else
 				arguments.emplace_back(token);
+
+			BOOST_LOG_TRIVIAL(warning) << "command line argument: " << token;
 		} 
 		ret.cl_string = escape_strings_cstyle(arguments);
 		BOOST_LOG_TRIVIAL(debug) << "single instance: " << 
@@ -490,7 +497,52 @@ namespace MessageHandlerInternal
 void OtherInstanceMessageHandler::handle_message(const std::string& message) 
 {
 	BOOST_LOG_TRIVIAL(info) << "message from other instance: " << message;
-
+	if(message=="login" || message=="logout") {
+		wxGetApp().mainframe->select_tab(MainFrame::tpHome);
+		wxGetApp().reload_homepage();
+		return;
+	}
+	if(message.find("region|") != std::string::npos) {
+		std::string region = wxGetApp().app_config->get("region");
+		std::string new_region = message.substr(7);
+		if(region == new_region) {
+			return;
+		}
+		wxGetApp().app_config->set("region", new_region);
+		wxGetApp().request_user_logout();
+		//wxGetApp().mainframe->select_tab(size_t(0));
+		wxGetApp().reload_homepage();
+	}
+	if(message.find("dark_mode|") != std::string::npos) {
+		std::string dark_color_mode = wxGetApp().app_config->get("dark_color_mode");
+		std::string new_dark_color_mode = message.substr(message.length()-1);
+		if(dark_color_mode == new_dark_color_mode) {
+			return;
+		}
+		wxGetApp().app_config->set("dark_color_mode", new_dark_color_mode);
+        wxGetApp().Update_dark_mode_flag();
+    
+// 
+//         //dark mode
+#ifdef _MSW_DARK_MODE
+        wxGetApp().force_colors_update();
+        wxGetApp().update_ui_from_settings();
+#endif
+#ifdef __WINDOWS__
+#ifdef _MSW_DARK_MODE
+    //NppDarkMode::SetDarkExplorerTheme(this->GetHWND());
+    //NppDarkMode::SetDarkTitleBar(this->GetHWND());
+    //wxGetApp().UpdateDlgDarkUI(this);
+    //SetActiveWindow(wxGetApp().mainframe->GetHWND());
+    //SetActiveWindow(GetHWND());
+#endif
+#endif
+        //DM::AppMgr::Ins().SystemThemeChanged();
+        SimpleEvent evt = SimpleEvent(EVT_GLCANVAS_COLOR_MODE_CHANGED);
+        wxPostEvent(wxGetApp().plater(), evt);
+		wxGetApp().reload_homepage();
+		return;
+	}
 	std::vector<std::string> args;
 	bool parsed = unescape_strings_cstyle(message, args);
 	assert(parsed);

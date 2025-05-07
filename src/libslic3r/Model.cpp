@@ -1180,7 +1180,10 @@ bool ModelObject::make_boolean(ModelObject *cut_object, const std::string &boole
     std::vector<TriangleMesh> new_meshes;
 
     const TriangleMesh &cut_mesh = cut_object->mesh();
+
+#ifndef CLOUD_SKIP_MESHBOOLEAN
     MeshBoolean::mcut::make_boolean(this->mesh(), cut_mesh, new_meshes, boolean_opts);
+#endif
 
     this->clear_volumes();
     int i = 1;

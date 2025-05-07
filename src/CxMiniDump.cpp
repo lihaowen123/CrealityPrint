@@ -7,6 +7,7 @@
 #include <iostream>
 #include <comdef.h>
 #include "libslic3r/GlobalConfig.hpp"
+#include "libslic3r/AutomationMgr.hpp"
 
 std::string PWSTRToString(PWSTR pwsz) {
 	// 将 PWSTR 转换为 std::wstring
@@ -129,9 +130,16 @@ LONG MiniDump::ApplicationCrashHandler(EXCEPTION_POINTERS *pException)
 		stTime.wYear, stTime.wMonth, stTime.wDay,
 		stTime.wHour, stTime.wMinute, stTime.wSecond,
 		processNameWStr.c_str());
+#if AUTOMATION_TOOL
+    if (Slic3r::AutomationMgr::enabled()) 
+	{
+        Slic3r::AutomationMgr::outputLog("Dump Error", 1);
+	}
+#endif // AUTOMATION_TOOL
+
 	// 创建dump文件;
 	CreateDumpFile(szDumpFile, pException);
-
+	
 	std::wstring exePath = GetExecutableDirectory() + L"/resources/dumptools/dumptool.exe";
 	//"C:/Users/Administrator/AppData/Roaming/Creality/New C3D/dump/20241023_114858_CrealityPrint_6.0.0.382_Alpha.dmp" "" "6.0.0.192" "zh_CN"
 	std::string version = CREALITYPRINT_VERSION;

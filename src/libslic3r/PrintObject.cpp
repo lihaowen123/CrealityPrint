@@ -300,13 +300,16 @@ void PrintObject::_transform_hole_to_polyholes()
 void PrintObject::make_perimeters()
 {
     // prerequisites
+    //DEFINE_PERFORMANCE_TEST("Generating walls 15%");
+    BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << " start memory info " << log_memory_info();
+
     this->slice();
 
     if (! this->set_started(posPerimeters))
         return;
 
     m_print->set_status(15, L("Generating walls"));
-    BOOST_LOG_TRIVIAL(info) << "Generating walls..." << log_memory_info();
+    BOOST_LOG_TRIVIAL(error) << "Generating walls..." << log_memory_info();
 
     // Revert the typed slices into untyped slices.
     if (m_typed_slices) {
@@ -388,7 +391,7 @@ void PrintObject::make_perimeters()
         BOOST_LOG_TRIVIAL(debug) << "Generating extra perimeters for region " << region_id << " in parallel - end";
     }
 
-    BOOST_LOG_TRIVIAL(debug) << "Generating perimeters in parallel - start";
+    BOOST_LOG_TRIVIAL(error) << "Generating perimeters in parallel - start";
     tbb::parallel_for(
         tbb::blocked_range<size_t>(0, m_layers.size()),
         [this](const tbb::blocked_range<size_t>& range) {
@@ -401,7 +404,8 @@ void PrintObject::make_perimeters()
     debug_perimeters(m_print, this);
 
     m_print->throw_if_canceled();
-    BOOST_LOG_TRIVIAL(debug) << "Generating perimeters in parallel - end";
+    BOOST_LOG_TRIVIAL(error) << "Generating perimeters in parallel - end  memory info ;" << log_memory_info();
+    ;
 
     this->set_done(posPerimeters);
 }
@@ -410,6 +414,7 @@ void PrintObject::prepare_infill()
 {
     if (! this->set_started(posPrepareInfill))
         return;
+    //DEFINE_PERFORMANCE_TEST("Generating infill regions 25%");
     m_print->set_status(25, L("Generating infill regions"));
     if (m_typed_slices) {
         // To improve robustness of detect_surfaces_type() when reslicing (working with typed slices), see GH issue #7442.
@@ -553,15 +558,18 @@ void PrintObject::prepare_infill()
 
 void PrintObject::infill()
 {
+    BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << " start memory info " << log_memory_info();
+
     // prerequisites
     this->prepare_infill();
 
     if (this->set_started(posInfill)) {
+        //DEFINE_PERFORMANCE_TEST("Generating infill toolpath 35%");
         m_print->set_status(35, L("Generating infill toolpath"));
         const auto& adaptive_fill_octree = this->m_adaptive_fill_octrees.first;
         const auto& support_fill_octree = this->m_adaptive_fill_octrees.second;
 
-        BOOST_LOG_TRIVIAL(debug) << "Filling layers in parallel - start";
+        BOOST_LOG_TRIVIAL(error) << "Filling layers in parallel - start";
         tbb::parallel_for(
             tbb::blocked_range<size_t>(0, m_layers.size()),
             [this, &adaptive_fill_octree = adaptive_fill_octree, &support_fill_octree = support_fill_octree](const tbb::blocked_range<size_t>& range) {
@@ -572,7 +580,7 @@ void PrintObject::infill()
             }
         );
         m_print->throw_if_canceled();
-        BOOST_LOG_TRIVIAL(debug) << "Filling layers in parallel - end";
+        BOOST_LOG_TRIVIAL(error) << "Filling layers in parallel - end";
         /*  we could free memory now, but this would make this step not idempotent
         ### $_->fill_surfaces->clear for map @{$_->regions}, @{$object->layers};
         */
@@ -580,6 +588,7 @@ void PrintObject::infill()
 
         debug_infills(m_print, this);
     }
+    BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << " end memory info " << log_memory_info();
 }
 
 void PrintObject::ironing()
@@ -623,6 +632,7 @@ void PrintObject::detect_overhangs_for_lift()
         size_t num_layers = this->layer_count();
         size_t num_raft_layers = m_slicing_params.raft_layers();
 
+        //DEFINE_PERFORMANCE_TEST("Detect overhangs for auto-lift 71%");
         m_print->set_status(71, L("Detect overhangs for auto-lift"));
 
         this->clear_overhangs_for_lift();
@@ -647,37 +657,42 @@ void PrintObject::detect_overhangs_for_lift()
 
 void PrintObject::generate_support_material()
 {
+
+    
     if (this->set_started(posSupportMaterial)) {
         this->clear_support_layers();
         m_cache_support_necessary = SupportNecessaryType::NoNeedSupp;
 
-        if ((this->has_support() && m_layers.size() > 1) || (this->has_raft() && ! m_layers.empty())) {
+        if ((this->has_support() && m_layers.size() > 1) || (this->has_raft() && !m_layers.empty())) {
+            //DEFINE_PERFORMANCE_TEST("Generating support 50%");
             m_print->set_status(50, L("Generating support"));
 
             this->_generate_support_material();
             m_print->throw_if_canceled();
-        } else if(!m_print->get_no_check_flag()) {
+        } else if (!m_print->get_no_check_flag()) {
             // BBS: pop a warning if objects have significant amount of overhangs but support material is not enabled
+            //DEFINE_PERFORMANCE_TEST("Checking support necessity 50%");
             m_print->set_status(50, L("Checking support necessity"));
-            typedef std::chrono::high_resolution_clock clock_;
-            typedef std::chrono::duration<double, std::ratio<1> > second_;
-            std::chrono::time_point<clock_> t0{ clock_::now() };
+            typedef std::chrono::high_resolution_clock           clock_;
+            typedef std::chrono::duration<double, std::ratio<1>> second_;
+            std::chrono::time_point<clock_>                      t0{clock_::now()};
 
             SupportNecessaryType sntype = this->is_support_necessary();
 
             m_cache_support_necessary = sntype;
 
-            double duration{ std::chrono::duration_cast<second_>(clock_::now() - t0).count() };
+            double duration{std::chrono::duration_cast<second_>(clock_::now() - t0).count()};
             BOOST_LOG_TRIVIAL(info) << std::fixed << std::setprecision(0) << "is_support_necessary takes " << duration << " secs.";
 
             if (m_cache_support_necessary != NoNeedSupp) {
-                std::map<SupportNecessaryType, std::string> reasons = {
-                    {SharpTail,L("floating regions")},
-                    {Cantilever,L("floating cantilever")},
-                    {LargeOverhang,L("large overhangs")} };
-                std::string warning_message = Slic3r::format(L("It seems object %s has %s. Please re-orient the object or enable support generation."),
-                    this->model_object()->name, reasons[m_cache_support_necessary]);
-                this->active_step_add_warning(PrintStateBase::WarningLevel::NON_CRITICAL, warning_message, PrintStateBase::SlicingNeedSupportOn);
+                std::map<SupportNecessaryType, std::string> reasons = {{SharpTail, L("floating regions")},
+                                                                       {Cantilever, L("floating cantilever")},
+                                                                       {LargeOverhang, L("large overhangs")}};
+                std::string                                 warning_message =
+                    Slic3r::format(L("It seems object %s has %s. Please re-orient the object or enable support generation."),
+                                   this->model_object()->name, reasons[m_cache_support_necessary]);
+                this->active_step_add_warning(PrintStateBase::WarningLevel::NON_CRITICAL, warning_message,
+                                              PrintStateBase::SlicingNeedSupportOn);
             }
         }
 
@@ -717,6 +732,7 @@ void PrintObject::estimate_curled_extrusions()
 void PrintObject::simplify_extrusion_path()
 {
     if (this->set_started(posSimplifyPath)) {
+        //DEFINE_PERFORMANCE_TEST("Optimizing toolpath1 75%");
         m_print->set_status(75, L("Optimizing toolpath"));
         BOOST_LOG_TRIVIAL(debug) << "Simplify extrusion path of object in parallel - start";
         //BBS: infill and walls
@@ -735,6 +751,7 @@ void PrintObject::simplify_extrusion_path()
     }
 
     if (this->set_started(posSimplifyInfill)) {
+        //DEFINE_PERFORMANCE_TEST("Optimizing toolpath2 75%");
         m_print->set_status(75, L("Optimizing toolpath"));
         BOOST_LOG_TRIVIAL(debug) << "Simplify infill extrusion path of object in parallel - start";
         //BBS: infills
@@ -754,6 +771,7 @@ void PrintObject::simplify_extrusion_path()
 
     if (this->set_started(posSimplifySupportPath)) {
         //BBS: share same progress
+        //DEFINE_PERFORMANCE_TEST("Optimizing toolpath3 75%");
         m_print->set_status(75, L("Optimizing toolpath"));
         BOOST_LOG_TRIVIAL(debug) << "Simplify extrusion path of support in parallel - start";
         tbb::parallel_for(
@@ -1030,6 +1048,7 @@ bool PrintObject::invalidate_state_by_config_options(
             || opt_key == "support_interface_top_layers"
             || opt_key == "support_interface_bottom_layers"
             || opt_key == "support_interface_pattern"
+            || opt_key == "support_interface_min_area"
             || opt_key == "support_interface_loop_pattern"
             || opt_key == "support_interface_filament"
             || opt_key == "support_interface_not_for_body"

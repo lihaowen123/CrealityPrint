@@ -131,8 +131,8 @@ enum class SlicingMode
 enum SupportMaterialPattern {
     smpDefault,
     smpRectilinear, smpRectilinearGrid, smpHoneycomb,
-    smpLightning,
     smpNone,
+    smpLightning,
     smpCross, smpGyroid, smpTriangles, smpZigzag,
 };
 
@@ -821,6 +821,7 @@ PRINT_CONFIG_CLASS_DEFINE(
     ((ConfigOptionInt,                 support_interface_filament))
     ((ConfigOptionInt,                 support_interface_top_layers))
     ((ConfigOptionInt,                 support_interface_bottom_layers))
+    ((ConfigOptionFloat,               support_interface_min_area))
     // Spacing between interface lines (the hatching distance). Set zero to get a solid interface.
     ((ConfigOptionFloat,               support_interface_spacing))
     ((ConfigOptionFloat,               support_interface_speed))

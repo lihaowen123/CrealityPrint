@@ -89,6 +89,7 @@ namespace DM {
 
     DeviceMgr::~DeviceMgr()
     {
+
     }
 
     void DeviceMgr::Load()
@@ -138,7 +139,7 @@ namespace DM {
 
         if (p->data.empty())
         {
-            this->AddGroup("Default");
+            this->AddGroup("New Group1");
         }
 
         if(this->GetCurrentDevice().empty()){
@@ -201,7 +202,25 @@ namespace DM {
         c << std::setw(4) << p->data << std::endl;
 
     }
-
+    void DeviceMgr::UpdateDevice(std::string address, Data& data)
+    {
+        for (auto& group : p->data["groups"])
+        {
+            int index = 0;
+            for (auto& item : group["list"])
+            {
+                std::string ip = item["address"];
+                if (ip == address)
+                {
+                    item["mac"] = data.mac;
+                    item["model"] = data.model;
+                    item["connectType"] = data.connectType;
+                    this->Save();
+                    return;
+                }
+            }
+        }
+    }
     void DeviceMgr::AddDevice(std::string group, Data& data)
     {
         if (!this->IsGroupExist(group)) {
@@ -315,7 +334,6 @@ namespace DM {
                 }
 
                 p->data["groups"].erase(index);
-                
                 this->Save();
                 return;
             }
@@ -338,6 +356,83 @@ namespace DM {
 
             index++;
         }
+    }
+    void DeviceMgr::remove2FirstGroup(std::string name) {
+        auto& groupList = p->data["groups"];
+        if (name == "" || groupList.size() < 2) {
+            return;
+        }
+        auto& f = groupList.front();
+        auto& g = (f["group"] == name) ? groupList[1] : f;
+        if (g["list"].is_null()) {
+            g["list"] = nlohmann::json::array();
+        }
+        for (auto& group : groupList) {
+            if (group["group"] == name) {
+                if (group.contains("list")) {
+                    for (auto& device : group["list"]) {
+                        g["list"].insert(g["list"].begin(), device);
+                    }
+                }
+                break;
+            }
+        }
+        RemoveGroup(name);
+    }
+
+    void DeviceMgr::move2Group(std::string originGroup, std::string targetGroup, std::string address)
+    {
+        auto& groupList = p->data["groups"];
+        if (address == "" || originGroup == "" || targetGroup == "") {
+            return;
+        }
+
+        json* p = nullptr;
+        for (auto& group : groupList) {
+            if (group["group"] == targetGroup) {
+                p = &group;
+                break;
+            }
+        }
+        if (p == nullptr) {
+            return;
+        }
+        auto& g = *p;
+        for (auto& group : groupList) {
+            if (group["group"] == originGroup) {
+                if (group.contains("list")) {
+                    int index = -1;
+                    for (auto& device : group["list"]) {
+                        index++;
+                        if (device["address"] == address) {
+                            if (g["list"].is_null()) {
+                                g["list"] = nlohmann::json::array();
+                            }
+                            g["list"].insert(g["list"].begin(), device);
+                            group["list"].erase(index);
+                            this->Save();
+                            return;
+                        }
+                    }
+                }
+                break;
+            }
+        }
+    }
+
+    bool groupSort(const json& a, const json& b, std::vector<std::string> order)
+    {
+        auto itA = std::find(order.begin(), order.end(), a["group"].get<std::string>());
+        auto itB = std::find(order.begin(), order.end(), b["group"].get<std::string>());
+
+        return itA < itB;
+    }
+
+    void DeviceMgr::sortGroup(std::vector<std::string> order)
+    {
+        auto& groupList = p->data["groups"];
+        std::sort(groupList.begin(), groupList.end(), [&order](const json& a, const json& b) { return groupSort(a, b, order); });
+        this->Save();
     }
 
     void DeviceMgr::SetMergeState(bool state)
@@ -447,7 +542,7 @@ namespace DM {
 
     void DeviceMgr::SetCurrentDevice(std::string mac)
     {
-        if (!IsPrinterExist(mac)) {
+        if (mac!=""&&!IsPrinterExist(mac)) {
             return;
         }
         auto& node = p->data["current_device"];

@@ -7,6 +7,7 @@
 #include <functional>
 #ifdef _WIN32
 #include "libslic3r/UnittestFlow.hpp"
+#include "libslic3r/AutomationMgr.hpp"
 #endif
 #include <boost/optional.hpp>
 
@@ -26,7 +27,11 @@
 #include "../libslic3r/libslic3r_version.h"
 #include "../libslic3r/Utils.hpp"
 #include "libslic3r/Color.hpp"
-
+#include <boost/asio.hpp>
+#include <boost/bind.hpp>
+#include <boost/thread.hpp>
+#include <boost/asio/ssl.hpp>
+using boost::asio::ip::tcp;
 class wxCheckBox;
 class wxTopLevelWindow;
 class wxRect;
@@ -235,6 +240,13 @@ public:
         if (BLCompareTestFlow::enabled()){
             return 0;
         }
+#if AUTOMATION_TOOL
+        // ����һЩӰ��ʱ��������������������̣��Զ������Բ���Ҫ�����Ի���
+        if (AutomationMgr::enabled()) {
+            return 0;
+        }
+#endif // AUTOMATION_TOOL
+ 
 #endif
         dialogStack.push_front(this);
         int r = wxDialog::ShowModal();
@@ -507,7 +519,7 @@ public:
 bool load_image(const std::string& filename, wxImage &image);
 bool generate_image(const std::string &filename, wxImage &image, wxSize img_size, int method = GERNERATE_IMAGE_RESIZE);
 int get_dpi_for_window(const wxWindow *window);
-
+bool download_file(const std::string& server, const std::string& path, const std::string& filename);
 
 }}
 

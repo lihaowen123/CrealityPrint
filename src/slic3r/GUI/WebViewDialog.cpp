@@ -33,46 +33,8 @@ END_EVENT_TABLE()
 
 WebViewPanel::WebViewPanel(wxWindow* parent) : wxPanel(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize)
 {
-    // alpha/beta/dev 对社区的影响：社区使用不同的创想云服务环境
-    // alpha：预发布环境（pre）+ cpp 启动的本地 http 服务
-    // beta：生产环境 + c++ 启动的本地 http 服务
-    // dev：根据开发需求决定用哪个环境 + 前端开发启动的局域网 http 服务
-
-    // alpha & beta: c++ 启动了一个 http server
-    // 原因：file 协议加载 html 跨域问题难以处理，尤其是大文件（font 文件，10M+）
-    // http server 信息：
-    // 1. 运行在 http://127.0.0.1:%d（端口动态获取）
-    // 2. 将 resources_dir 的 web/homepage 作为静态目录，社区的 html 等打包放在这里
-    // 3. c++ webview 加载 http://127.0.0.1:%d/#/；添加 # 是因为使用了 hash 路由
-    // wxString url     = wxString::Format("http://127.0.0.1:%d/#/",wxGetApp().get_server_port()); // 127.0.0.1 访问创想云 cdn 图片会
-    // 403，因此使用 localhost
-    wxString lang = wxGetApp().app_config->get("language") != "" ? wxGetApp().app_config->get("language") : "en_GB";
-
-    std::string type = std::string(PROJECT_VERSION_EXTRA);
-    type.erase(std::remove(type.begin(), type.end(), ' '), type.end());
-
-    std::string version = std::string(CREALITYPRINT_VERSION);
-    version.erase(std::remove(version.begin(), version.end(), ' '), version.end());
-
-    std::string region = wxGetApp().app_config->get("region");
-
-    std::string use_inches = wxGetApp().app_config->get("use_inches");
-
-    int port = wxGetApp().get_server_port();
-
-    // for pro
-    wxString url = wxString::Format(
-        "http://localhost:%d/homepage/index.html?lang=%s&version=%s&type=%s&region=%s&use_inches=%s&debug=false#/Community/Home Page", port,
-        lang, version, type, region, use_inches);
-
-    // for dev: 使用局域网地址：可以找【刘明，或其他前端开发同事】，按要求启动一个 http 服务，用于调试
-    /* port = 9090;
-     type = std::string("Beta");
-     wxString url = wxString::Format(
-         "http://localhost:%d/index.html?lang=%s&version=%s&type=%s&region=%s&use_inches=%s&debug=false#/Community/Home Page", port, lang,
-         version, type, region, use_inches
-     );*/
-
+    
+    wxString url = GetURL();
     wxBoxSizer* topsizer = new wxBoxSizer(wxVERTICAL);
 
 #if !BBL_RELEASE_TO_PUBLIC
@@ -116,7 +78,7 @@ WebViewPanel::WebViewPanel(wxWindow* parent) : wxPanel(parent, wxID_ANY, wxDefau
     topsizer->Add(m_info, wxSizerFlags().Expand());
     // Create the webview
     m_browser = WebView::CreateWebView(this, url);
-    // m_browser->EnableAccessToDevTools(); // for debug:
+    m_browser->EnableAccessToDevTools(); // for debug:
     if (m_browser == nullptr) {
         wxLogError("Could not init m_browser");
         return;
@@ -256,6 +218,53 @@ WebViewPanel::WebViewPanel(wxWindow* parent) : wxPanel(parent, wxID_ANY, wxDefau
     DM::AppMgr::Ins().Register(m_browser);
 }
 
+wxString WebViewPanel::GetURL()
+{
+    // alpha/beta/dev 对社区的影响：社区使用不同的创想云服务环境
+    // alpha：预发布环境（pre）+ cpp 启动的本地 http 服务
+    // beta：生产环境 + c++ 启动的本地 http 服务
+    // dev：根据开发需求决定用哪个环境 + 前端开发启动的局域网 http 服务
+
+    // alpha & beta: c++ 启动了一个 http server
+    // 原因：file 协议加载 html 跨域问题难以处理，尤其是大文件（font 文件，10M+）
+    // http server 信息：
+    // 1. 运行在 http://127.0.0.1:%d（端口动态获取）
+    // 2. 将 resources_dir 的 web/homepage 作为静态目录，社区的 html 等打包放在这里
+    // 3. c++ webview 加载 http://127.0.0.1:%d/#/；添加 # 是因为使用了 hash 路由
+    // wxString url     = wxString::Format("http://127.0.0.1:%d/#/",wxGetApp().get_server_port()); // 127.0.0.1 访问创想云 cdn 图片会
+    // 403，因此使用 localhost
+    wxString lang = wxGetApp().app_config->get("language") != "" ? wxGetApp().app_config->get("language") : "en_GB";
+
+    std::string type = std::string(PROJECT_VERSION_EXTRA);
+    type.erase(std::remove(type.begin(), type.end(), ' '), type.end());
+
+    std::string version = std::string(CREALITYPRINT_VERSION);
+    version.erase(std::remove(version.begin(), version.end(), ' '), version.end());
+
+    std::string region = wxGetApp().app_config->get("region");
+
+    std::string use_inches = wxGetApp().app_config->get("use_inches");
+
+    int port = wxGetApp().get_server_port();
+    //type = std::string("Beta");
+    // for pro
+    #ifdef _DEBUG1
+    type = std::string("Beta");
+    #endif
+    wxString url = wxString::Format(
+        "http://localhost:%d/homepage/index.html?lang=%s&version=%s&type=%s&region=%s&use_inches=%s&debug=false&time=%d#/Community/Home Page", port,
+        lang, version, type, region, use_inches,std::time(0));
+
+    // for dev: 使用局域网地址：可以找【刘明，或其他前端开发同事】，按要求启动一个 http 服务，用于调试
+     /*port = 9090;
+     type = std::string("Beta");
+     
+     wxString url = wxString::Format(
+         "http://localhost:%d/index.html?lang=%s&version=%s&type=%s&region=%s&use_inches=%s&debug=false&time=%d#/Community/Home Page", port, lang,
+         version, type, region, use_inches,use_inches,std::time(0)
+     );*/
+     return url;
+}
 WebViewPanel::~WebViewPanel()
 {
     BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << " Start";
@@ -270,7 +279,12 @@ WebViewPanel::~WebViewPanel()
     }
     BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << " End";
 }
-
+void WebViewPanel::Reload()
+{
+    m_browser->LoadURL(GetURL());
+    //m_browser->SetFocus();
+    UpdateState();
+}
 void WebViewPanel::load_url(wxString& url)
 {
     this->Show();

@@ -23,6 +23,8 @@ struct Camera;
 class GLGizmoMmuSegmentation;
 class Selection;
 
+#define Vec2i Vec2i32
+
 enum class PainterGizmoType {
     FDM_SUPPORTS,
     SEAM,
@@ -222,6 +224,7 @@ protected:
     void render_cursor_sphere(const Transform3d& trafo) const;
     // BBS
     void render_cursor_height_range(const Transform3d& trafo) const;
+    void render_height_range_by_imgui(const Transform3d& trafo) const;
     //BBS: add logic to distinguish the first_time_update and later_update
     virtual void update_model_object() = 0;
     virtual void update_from_model_object(bool first_update) = 0;
@@ -276,6 +279,7 @@ protected:
     ToolType m_tool_type                  = ToolType::BRUSH;
     float    m_smart_fill_angle           = 30.f;
 
+    bool     m_checked_support                  = false;
     bool     m_paint_on_overhangs_only          = false;
     float    m_highlight_by_angle_threshold_deg = 0.f;
 
@@ -361,11 +365,15 @@ private:
     mutable float       m_cursor_z{0};
     mutable double      m_height_start_z_in_imgui{0};
     mutable bool        m_is_set_height_start_z_by_imgui{false};
-    mutable Vec2i32       m_height_start_pos{0, 0};
+    mutable Vec2i32     m_height_start_pos{0, 0};
+    mutable float       m_x_for_height_input{-1};
+    mutable bool        m_lock_x_for_height_bottom{false};  //起点输入框置于鼠标附近
+    mutable Vec2f       m_height_range_input_all_size;
     mutable bool        m_is_cursor_in_imgui{false};
+    mutable bool        m_show_height_range_by_imgui{true};  //是否显示距底边高度
     BoundingBoxf3 bounding_box() const;
-    void update_contours(int i, const TriangleMesh& vol_mesh, float cursor_z, float max_z, float min_z) const;
-
+    void update_contours(int i, const TriangleMesh& vol_mesh, float cursor_z, float max_z, float min_z, bool update_height_start_pos) const;
+    Vec2i                            _3d_to_mouse(Vec3d pos_in_3d, const Camera& camera) const;
 protected:
     void on_set_state() override;
     virtual void on_opening() = 0;
@@ -380,8 +388,10 @@ protected:
     bool wants_enter_leave_snapshots() const override { return true; }
 
     virtual wxString handle_snapshot_action_name(bool shift_down, Button button_down) const = 0;
-
+    bool             is_mouse_hit_in_imgui() const;
     friend class ::Slic3r::GUI::GLGizmoMmuSegmentation;
+    mutable Vec2i m_imgui_start_pos{0, 0};
+    mutable Vec2i m_imgui_end_pos{0, 0};
 };
 
 

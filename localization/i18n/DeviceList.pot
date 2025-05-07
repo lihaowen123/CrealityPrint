@@ -1144,5 +1144,8 @@ msgstr "Filament Weight"
 msgid "Feed issue, filament failed to exit extruder.Please resolve and click 'Retry' button."
 msgstr "Feed issue, filament failed to exit extruder.Please resolve and click 'Retry' button."
 
-msgid "The current printer's material rack consumables do not exist. Do you want to continue printing"
-msgstr "The current printer's material rack consumables do not exist. Do you want to continue printing"
+msgid "The current printer's material rack consumables do not exist. Do you want to continue printing?"
+msgstr "The current printer's material rack consumables do not exist. Do you want to continue printing?"
+
+msgid "The machine consumables do not match the printed file. Please check and restart printing"
+msgstr "The machine consumables do not match the printed file. Please check and restart printing"

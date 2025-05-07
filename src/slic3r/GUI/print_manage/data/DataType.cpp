@@ -95,7 +95,7 @@ namespace DM{
                                 mat.state = material.contains("state") ? material["state"].get<int>() : 0;
                                 mat.selected = material.contains("selected") ? material["selected"].get<int>() : 0;
                                 mat.editStatus = material.contains("editStatus") ? material["editStatus"].get<int>() : 0;
-
+                                mat.userMaterial = material.contains("userMaterial") ? material["userMaterial"].get<std::string>() : "";
                                 materialBox.materials.push_back(mat);
                             }
                         }
@@ -107,7 +107,7 @@ namespace DM{
             }
         }
         catch (std::exception &e) {
-            BOOST_LOG_TRIVIAL(trace) << "DM::Device Device::deserialize;Error:" << e.what();
+            BOOST_LOG_TRIVIAL(error) << "DM::Device Device::deserialize;Error:" << e.what();
         }
         
         return data;

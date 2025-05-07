@@ -45,10 +45,10 @@ def processLocalParamPack(working_path, build_type, engine_type, engine_version)
         shutil.copytree(os.path.join(working_path, "resources", "sliceconfig", server_path_prefix), default_path)    
         print("use local parampack:"+os.path.join(working_path, "resources", "sliceconfig", server_path_prefix))     
 def downloadParamPack(working_path, build_type, engine_type, engine_version) -> None:
-    server_path_prefixes = ["server_0", "server_1"]
+    server_path_prefixes = ["server_0"]
     base_urls = ['https://api.crealitycloud.cn/', 'https://api.crealitycloud.com/']
     base_alpha_urls = ['https://admin-pre.crealitycloud.cn/', 'https://admin-pre.crealitycloud.cn/']
-    idx = 0
+    idx = 1
     for server_path_prefix in server_path_prefixes:
         if build_type == 'Release' or build_type == 'Beta':
             base_url = base_urls[idx]
@@ -76,6 +76,7 @@ def downloadParamPack(working_path, build_type, engine_type, engine_version) -> 
                 with open(file_path, 'w+', encoding='utf8') as json_file:
                     json.dump(response["result"], json_file, ensure_ascii=False)
                 printer_list = response["result"]["printerList"]
+                session = requests.Session()
                 for printer in printer_list:
                     zip_url = printer['zipUrl']
                     if zip_url == "":
@@ -84,10 +85,10 @@ def downloadParamPack(working_path, build_type, engine_type, engine_version) -> 
                     for nozzleDiameter in printer['nozzleDiameter']:
                         unique_printer_name = unique_printer_name + "-" + nozzleDiameter
                     print(unique_printer_name)
-                    r = requests.get(zip_url, allow_redirects=True)
+                    r = session.get(zip_url, allow_redirects=True,timeout=(5, 10))
                     tmpdirname = tempfile.mkdtemp()
                     tmpdirname = os.path.join(tmpdirname, unique_printer_name + '.zip')
-                    print(tmpdirname)
+                    print(tmpdirname, zip_url)
                     open(tmpdirname, 'wb+').write(r.content)
                     with zipfile.ZipFile(tmpdirname, 'r') as zObject: 
                         zObject.extractall(path=os.path.join(default_path, "parampack", unique_printer_name))
@@ -95,12 +96,12 @@ def downloadParamPack(working_path, build_type, engine_type, engine_version) -> 
                     thumb_url = printer['thumbnail']
                     if thumb_url == "":
                         continue
-                    r = requests.get(thumb_url, allow_redirects=True)
+                    r = session.get(thumb_url, allow_redirects=True,timeout=(5, 10))
                     imagedir = os.path.join(default_path, "machineImages")
                     if not os.path.exists(imagedir):
                         os.makedirs(imagedir)
                     imagedirname = os.path.join(imagedir, printer['printerIntName'] + '.png')
-                    print(imagedirname)
+                    print(imagedirname,thumb_url)
                     open(imagedirname, 'wb+').write(r.content)
 
             else:

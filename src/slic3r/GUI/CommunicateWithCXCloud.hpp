@@ -75,11 +75,11 @@ namespace GUI {
     public:
         static CXCloudDataCenter& getInstance();
 
-        const std::map<std::string, std::map<std::string, std::string>>& getUserCloudPresets();
+        std::map<std::string, std::map<std::string, std::string>> getUserCloudPresets();
         void setUserCloudPresets(const std::string& presetName, const std::string& settingID, const std::map<std::string, std::string>& mapPresetValue);
         void cleanUserCloudPresets();
-        void updateUserCloudPresets(const std::string& presetName, const std::map<std::string, std::string>& mapPresetValue);
-        int                                                              deleteUserPresetBySettingID(const std::string& settingID);
+        void updateUserCloudPresets(const std::string& presetName, const std::string& settingID, const std::map<std::string, std::string>& mapPresetValue);
+        int  deleteUserPresetBySettingID(const std::string& settingID);
 
         void setDownloadConfigToLocalState(ENDownloadConfigState state);
         // -1:未开始下载 0:下载成功， 1：下载失败, 2: 创想云没有配置文件
@@ -102,6 +102,7 @@ namespace GUI {
     private:
         std::map<std::string, std::map<std::string, std::string>> m_mapUserCloudPresets;
         std::map<std::string, std::string>                        m_mapSettingID2PresetName;
+        std::mutex                                                 m_mutexUserCloudPresets;
         ENDownloadConfigState                                     m_enDownloadConfigToLocalState = ENDownloadConfigState::ENDCS_NOT_DOWNLOAD;
         long long m_llUpdateConfigFileTimestamp = 0;
         PreUpdateProfileRetInfo                                   m_configFileRetInfo;

@@ -954,6 +954,7 @@ src/libslic3r/Fill/Quarter/NoZigZagConnectorProcessor.cpp
 src/libslic3r/Fill/Quarter/ZigzagConnectorProcessor.cpp
 src/libslic3r/Format/3mf.cpp
 src/libslic3r/Format/AMF.cpp
+src/libslic3r/Format/AssimpModel.cpp
 src/libslic3r/Format/bbs_3mf.cpp
 src/libslic3r/Format/OBJ.cpp
 src/libslic3r/Format/objparser.cpp
@@ -964,6 +965,7 @@ src/libslic3r/Format/svg.cpp
 src/libslic3r/Format/ZipperArchiveImport.cpp
 src/libslic3r/Format/3mf.hpp
 src/libslic3r/Format/AMF.hpp
+src/libslic3r/Format/AssimpModel.hpp
 src/libslic3r/Format/bbs_3mf.hpp
 src/libslic3r/Format/ModelIO.hpp
 src/libslic3r/Format/OBJ.hpp
@@ -1089,6 +1091,19 @@ src/libslic3r/Support/TreeModelVolumes.hpp
 src/libslic3r/Support/TreeSupport.hpp
 src/libslic3r/Support/TreeSupport3D.hpp
 src/libslic3r/Support/TreeSupportCommon.hpp
+src/libslic3r/support_new/SupportCommon.cpp
+src/libslic3r/support_new/SupportMaterial.cpp
+src/libslic3r/support_new/TreeModelVolumes.cpp
+src/libslic3r/support_new/TreeSupport.cpp
+src/libslic3r/support_new/TreeSupport3D.cpp
+src/libslic3r/support_new/SupportCommon.hpp
+src/libslic3r/support_new/SupportLayer.hpp
+src/libslic3r/support_new/SupportMaterial.hpp
+src/libslic3r/support_new/SupportParameters.hpp
+src/libslic3r/support_new/TreeModelVolumes.hpp
+src/libslic3r/support_new/TreeSupport.hpp
+src/libslic3r/support_new/TreeSupport3D.hpp
+src/libslic3r/support_new/TreeSupportCommon.hpp
 src/mcut/source/bvh.cpp
 src/mcut/source/frontend.cpp
 src/mcut/source/hmesh.cpp
@@ -1279,6 +1294,7 @@ src/slic3r/GUI/InstanceCheck.cpp
 src/slic3r/GUI/KBShortcutsDialog.cpp
 src/slic3r/GUI/LoadOldPresets.cpp
 src/slic3r/GUI/LoadOldPresetsFromFolder.cpp
+src/slic3r/GUI/LoginTip.cpp
 src/slic3r/GUI/MainFrame.cpp
 src/slic3r/GUI/MarkdownTip.cpp
 src/slic3r/GUI/MediaFilePanel.cpp
@@ -1354,6 +1370,7 @@ src/slic3r/GUI/TextLines.cpp
 src/slic3r/GUI/TickCode.cpp
 src/slic3r/GUI/UnsavedChangesDialog.cpp
 src/slic3r/GUI/UpdateDialogs.cpp
+src/slic3r/GUI/UpdateParams.cpp
 src/slic3r/GUI/UpgradePanel.cpp
 src/slic3r/GUI/UploadFile.cpp
 src/slic3r/GUI/UserManager.cpp
@@ -1458,6 +1475,7 @@ src/slic3r/GUI/InstanceCheck.hpp
 src/slic3r/GUI/KBShortcutsDialog.hpp
 src/slic3r/GUI/LoadOldPresets.hpp
 src/slic3r/GUI/LoadOldPresetsFromFolder.hpp
+src/slic3r/GUI/LoginTip.hpp
 src/slic3r/GUI/MainFrame.hpp
 src/slic3r/GUI/MarkdownTip.hpp
 src/slic3r/GUI/MeshHollow.hpp
@@ -1528,6 +1546,7 @@ src/slic3r/GUI/TextLines.hpp
 src/slic3r/GUI/TickCode.hpp
 src/slic3r/GUI/UnsavedChangesDialog.hpp
 src/slic3r/GUI/UpdateDialogs.hpp
+src/slic3r/GUI/UpdateParams.hpp
 src/slic3r/GUI/UpgradePanel.hpp
 src/slic3r/GUI/UploadFile.hpp
 src/slic3r/GUI/UserManager.hpp
@@ -1822,3 +1841,9 @@ src/slic3r/Utils/SimplyPrint.hpp
 src/slic3r/Utils/TCPConsole.hpp
 src/slic3r/Utils/UndoRedo.hpp
 src/slic3r/Utils/WxFontUtils.hpp
+src/video/WebRTCDecoder.cpp
+src/video/YangPlayerBase.cpp
+src/video/YangPlayerDecoder.cpp
+src/video/YangPlayerHandleImpl.cpp
+src/video/YangPlayerPlay.cpp
+src/video/YangRtcReceive.cpp

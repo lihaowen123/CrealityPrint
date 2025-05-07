@@ -493,8 +493,8 @@ void GLGizmoHollow::on_render_input_window(float x, float y, float bottom_limit)
 
     const float approx_height = m_imgui->scaled(20.0f);
     y = std::min(y, bottom_limit - approx_height);
-    m_imgui->set_next_window_pos(x, y, ImGuiCond_Always);
-
+    //m_imgui->set_next_window_pos(x, y, ImGuiCond_Always);
+    GizmoImguiSetNextWIndowPos(x, y, ImGuiCond_Always);
     GizmoImguiBegin(get_name(), ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse);
     //m_imgui->begin(get_name(), ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse);
 
@@ -655,6 +655,10 @@ void GLGizmoHollow::on_render_input_window(float x, float y, float bottom_limit)
 
     ImGui::SetCursorPosX(start_x);
     if (ImGui::Button(btn_title)) {
+
+        //check whether need repairing or not before Hollow
+        wxGetApp().plater()->check_object_need_repair(m_parent.get_selection().get_object_idx());
+
        // hollow_mesh();
        Slic3r::MeshHollow(mo->volumes, diam);
        mesh1 = mo->volumes[0]->mesh();
@@ -675,6 +679,10 @@ void GLGizmoHollow::on_render_input_window(float x, float y, float bottom_limit)
 
        std::swap(curr_model_object->volumes[0], curr_model_object->volumes.back());
        curr_model_object->delete_volume(curr_model_object->volumes.size() - 1);
+
+       //check whether need repairing or not after Hollow
+       wxGetApp().plater()->check_object_need_repair(m_parent.get_selection().get_object_idx(), "hollow");
+
        wxGetApp().plater()->update();
        wxGetApp().obj_list()->select_item([this, new_volume]() {
            wxDataViewItem sel_item;

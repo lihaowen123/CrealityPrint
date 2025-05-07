@@ -291,6 +291,7 @@ public:
 
     const IndicesList& get_volume_idxs() const { return m_list; }
     const GLVolume* get_volume(unsigned int volume_idx) const;
+    const GLVolume* get_volume(unsigned int model_id, unsigned int volume_id, unsigned int instance_id) const;
     const GLVolume* get_first_volume() const { return get_volume(*m_list.begin()); }
     GLVolume* get_volume(unsigned int volume_idx);
 

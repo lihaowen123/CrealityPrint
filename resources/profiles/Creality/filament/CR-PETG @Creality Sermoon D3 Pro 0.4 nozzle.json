@@ -72,7 +72,7 @@
     "filament_stamping_distance": "0",
     "filament_stamping_loading_speed": "0",
     "filament_start_gcode": [
-        "; filament start gcode\n{if (position[2] > first_layer_height) }\nM104 S[nozzle_temperature]\n{else} \nM104 S[first_layer_temperature]\n{endif}\n\n{if(initial_extruder != current_extruder || position[2] > first_layer_height)}\n{if (position[2] +0.4  < printable_height) }\nG2 Z{position[2]  + 0.4} I0.86 J0.86 P1 F10000 ; spiral lift a little from second lift\nG1 X205 Y345 F20000\nG1 Z{position[2] } F1200\n{else}\nG1 X205 Y345 F20000\n{endif}\n{endif}"
+        "; filament start gcode"
     ],
     "filament_toolchange_delay": "0",
     "filament_type": [
@@ -92,6 +92,8 @@
     "hot_plate_temp": "80",
     "hot_plate_temp_initial_layer": "80",
     "idle_temperature": "0",
+    "material_flow_dependent_temperature": "0",
+    "material_flow_temp_graph": "[[3.0,210],[10.0,220],[12.0,230]]",
     "nozzle_temperature": "230",
     "nozzle_temperature_initial_layer": "230",
     "nozzle_temperature_range_high": "260",

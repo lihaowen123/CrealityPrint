@@ -478,6 +478,114 @@ bool generate_image(const std::string &filename, wxImage &image, wxSize img_size
     //image.ConvertAlphaToMask(image.GetMaskRed(), image.GetMaskGreen(), image.GetMaskBlue());
     return true;
 }
+bool download_file(const std::string& server, const std::string& path, const std::string& filename) {
+    try {
+        boost::asio::io_context io_context;
+
+        // 创建 TCP 解析器和查询对象
+        tcp::resolver resolver(io_context);
+        tcp::resolver::query query(server, "http");
+        tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
+
+        // 创建 TCP 套接字
+        tcp::socket socket(io_context);
+        // 创建定时器
+        boost::asio::steady_timer timer(io_context);
+        bool timeout_occurred = false;
+
+        // 设置超时时间
+        timer.expires_after(std::chrono::seconds(5));
+        timer.async_wait([&](const boost::system::error_code& ec) {
+            if (!ec) {
+                timeout_occurred = true;
+                socket.close(); // 超时后关闭套接字
+            }
+        });
+
+        // 异步连接
+        boost::asio::async_connect(socket, endpoint_iterator, [&](const boost::system::error_code& ec, tcp::resolver::iterator) {
+            if (!ec) {
+                timer.cancel(); // 连接成功，取消定时器
+            }
+        });
+
+        // 运行 io_context，等待连接或超时
+        io_context.run();
+
+        if (timeout_occurred) {
+            std::cout << "Connection timed out\n";
+            return false;
+        }
+
+
+        // 构建 HTTP 请求
+        boost::asio::streambuf request;
+        std::ostream request_stream(&request);
+        request_stream << "GET " << path << " HTTP/1.1\r\n";
+        request_stream << "Host: " << server << "\r\n";
+        request_stream << "Accept: */*\r\n";
+        request_stream << "Connection: close\r\n\r\n";
+
+        // 发送 HTTP 请求
+        boost::asio::write(socket, request);
+
+        // 接收响应
+        boost::asio::streambuf response;
+        boost::asio::read_until(socket, response, "\r\n");
+
+        // 检查响应状态行
+        std::istream response_stream(&response);
+        std::string http_version;
+        response_stream >> http_version;
+        unsigned int status_code;
+        response_stream >> status_code;
+        std::string status_message;
+        std::getline(response_stream, status_message);
+        if (!response_stream || http_version.substr(0, 5) != "HTTP/") {
+            std::cout << "Invalid response\n";
+            return false;
+        }
+        if (status_code != 200) {
+            std::cout << "Response returned with status code " << status_code << "\n";
+            return false;
+        }
+
+        // 读取响应头
+        boost::asio::read_until(socket, response, "\r\n\r\n");
+
+        // 处理响应头
+        std::string header;
+        while (std::getline(response_stream, header) && header != "\r")
+            std::cout << header << "\n";
+        std::cout << "\n";
+
+        // 打开文件以写入数据
+        std::ofstream file(filename, std::ios::binary);
+        if (!file) {
+            std::cout << "Failed to open file for writing\n";
+            return false;
+        }
+
+        // 读取响应体并写入文件
+        if (response.size() > 0)
+            file << &response;
+        boost::system::error_code error;
+        while (boost::asio::read(socket, response,
+                                 boost::asio::transfer_at_least(1), error))
+            file << &response;
+        if (error != boost::asio::error::eof)
+        {
+            file.close();
+            throw boost::system::system_error(error);
+        }
+            
+    }
+    catch (std::exception& e) {
+        std::cout << "Exception: " << e.what() << "\n";
+        return false;
+    }
+    return true;
+}
 
 std::deque<wxDialog*> dialogStack;
 

@@ -97,11 +97,12 @@ int nsUpdateParams::CXCloud::loadLocalPrinter() {
 
     m_mapLocalPrinterVersion.clear();
 
-    auto cache_file = fs::path(data_dir()).append("profile_version.json");
-    if (!fs::exists(cache_file)) {
-        auto src = fs::path(resources_dir()).append("profiles").append("Creality").append("profile_version.json");
-        fs::copy_file(src, cache_file);
-    }
+    //auto cache_file = fs::path(data_dir()).append("profile_version.json");
+    //if (!fs::exists(cache_file)) {
+    //    auto src = fs::path(resources_dir()).append("profiles").append("Creality").append("profile_version.json");
+    //    fs::copy_file(src, cache_file);
+    //}
+    auto cache_file = fs::path(data_dir()).append("system").append("Creality").append("profile_version.json");
     json cache_json;
     if (fs::exists(cache_file)) {
         boost::nowide::ifstream ifs(cache_file.string());

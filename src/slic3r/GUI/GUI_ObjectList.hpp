@@ -532,7 +532,7 @@ public:
     void update_printable_state(int obj_idx, int instance_idx);
     void toggle_printable_state();
 
-    void on_char(wxKeyEvent& evt);
+    bool on_char(wxKeyEvent& evt);
     void on_key(wxKeyEvent& evt);
 
     //BBS: remove const qualifier

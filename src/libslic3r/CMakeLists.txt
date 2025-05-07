@@ -25,6 +25,11 @@ endif ()
 
 set(OpenVDBUtils_SOURCES "")
 
+set(AUTOMATION_TOOL OFF)
+#if(${PROJECT_VERSION_EXTRA} STREQUAL "Alpha")
+#    set(AUTOMATION_TOOL ON)
+#endif()
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libslic3r_version.h.in ${CMAKE_CURRENT_BINARY_DIR}/libslic3r_version.h)
 
 if (TARGET openvdb_libs)
     set(OpenVDBUtils_SOURCES OpenVDBUtils.cpp OpenVDBUtils.hpp)
@@ -512,6 +517,8 @@ if(WIN32)
         baselineorcinput.cpp
         UnittestFlow.cpp
         UnittestFlow.hpp
+        AutomationMgr.hpp
+        AutomationMgr.cpp
     )
 endif()
 
@@ -541,13 +548,18 @@ find_package(CGAL REQUIRED)
 find_package(OpenCV REQUIRED core)
 cmake_policy(POP)
 
-add_library(libslic3r_cgal STATIC 
-    CutSurface.hpp CutSurface.cpp
-    IntersectionPoints.hpp IntersectionPoints.cpp
-    MeshBoolean.hpp MeshBoolean.cpp
-    TryCatchSignal.hpp TryCatchSignal.cpp
-    Triangulation.hpp Triangulation.cpp
-)
+set(lisbslic3r_cgal_sources    CutSurface.hpp CutSurface.cpp
+            IntersectionPoints.hpp IntersectionPoints.cpp
+            TryCatchSignal.hpp TryCatchSignal.cpp
+            Triangulation.hpp Triangulation.cpp)
+if(BUILD_CLOUD_SLICER)
+    add_definitions(-DCLOUD_SKIP_MESHBOOLEAN)
+else()
+    list(APPEND lisbslic3r_cgal_sources MeshBoolean.hpp MeshBoolean.cpp)
+endif()    
+
+add_library(libslic3r_cgal STATIC ${lisbslic3r_cgal_sources})
+
 target_include_directories(libslic3r_cgal PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 # Reset compile options of libslic3r_cgal. Despite it being linked privately, CGAL options
@@ -662,10 +674,12 @@ if(TARGET openssl::openssl)
     target_link_libraries(libslic3r openssl::openssl)
 endif()
 
-if(NOT WIN32)
-    target_link_libraries(libslic3r freetype)
-    if (NOT APPLE)
-        target_link_libraries(libslic3r fontconfig)
+if(NOT BUILD_CLOUD_SLICER)
+    if(NOT WIN32)
+        target_link_libraries(libslic3r freetype)
+        if (NOT APPLE)
+            target_link_libraries(libslic3r fontconfig)
+        endif()
     endif()
 endif()
 

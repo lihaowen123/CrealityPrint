@@ -497,6 +497,7 @@ public:
 	virtual void reset_model_config();
 
 	bool has_key(std::string const &key);
+    boost::any value(std::string const& key);
 
 protected:
 	virtual void    activate_selected_page(std::function<void()> throw_if_canceled);
@@ -593,7 +594,7 @@ public:
 	void		clear_pages() override;
 	void		create_preset_tab() override;
 	bool 		supports_printer_technology(const PrinterTechnology tech) const override { return tech == ptFFF; }
-	void		changedSelectFilament(std::string presetName);
+	bool		changedSelectFilament(std::string presetName);
     const std::string&	get_custom_gcode(const t_config_option_key& opt_key) override;
     void				set_custom_gcode(const t_config_option_key& opt_key, const std::string& value) override;
 	void updateVentorList(const std::unordered_set<wxString>& ventorList, const wxString& curPreset = wxString());
@@ -658,7 +659,7 @@ public:
 	bool		apply_extruder_cnt_from_cache();
 
 	void changedSelectPrint(size_t selection);
-	void changedSelectPrint(std::string presetName);
+	bool changedSelectPrint(std::string presetName);
 	void create_preset_tab() override;
 	void updateVentorList(const std::unordered_set<wxString>& ventorList, const wxString& curPreset = wxString());
 	void updatePrintList(const std::unordered_set<wxString>& printerList, const wxString& curPreset = wxString());

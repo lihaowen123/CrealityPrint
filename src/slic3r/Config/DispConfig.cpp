@@ -135,6 +135,10 @@ GLTexture* DispConfig::getTexture(TextureType tt, bool hover, bool sel) {
             {e_tt_gcode_pause, {"gcode_preview_pause.svg", false, false, false}},
             {e_tt_rounding_transparent, {"rounding_transparent.svg", false, false, false}},
             {e_tt_retangle_transparent, {"retangle_transparent.svg", false, false, false}},
+            {e_tt_block_notification_close, {"block_notification_close.svg", false, false, false}},
+            {e_tt_block_notification_close_hover, {"block_notification_close_hover.svg", false, false, false}},
+            {e_tt_normal_tip_block_notification_close, {"block_notification_close.svg", true, false, false}},
+            {e_tt_normal_tip_block_notification_close_hover, {"block_notification_close_hover.svg", true, false, false}}
         };
         std::string path = resources_dir() + "/images/";
         const auto &[name,needDark,needHover,needSel] = s_names[tt];
@@ -461,7 +465,7 @@ ImU32 DispConfig::getColorImU32(ColorType ct) {
         ret = s_isDark ? IM_COL32(66, 75, 81,255) : IM_COL32(242, 242, 245,255);
         break;
     case Slic3r::GUI::DispConfig::e_ct_normalTip:
-        ret = IM_COL32(0, 255, 0, 255);
+        ret = IM_COL32(23, 204, 95, 255);
         break;
     default: break;
     }

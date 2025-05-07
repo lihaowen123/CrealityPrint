@@ -15,7 +15,6 @@ echo LastVerion= %LastVerion%
 
 SET ACTION_DepBuild=DepBuild
 SET ACTION_AllGenerate=AllGenerate
-SET ACTION_Extract=ExtractDeps
 SET ACTION_Generate=Generate
 SET ACTION_Build=Build
 SET ACTION_Project=Project
@@ -54,6 +53,7 @@ IF %Argc% LSS 2 (
 
 SET Arg1=%1
 SET Arg2=%2
+SET Arg3=%3
 SET index=0
 
 IF /i %Arg2%==%TYPE_Debug% (
@@ -69,6 +69,13 @@ if [-c] == [%3] (
     SET SLICER_HEADER=0
 ) else (
     SET SLICER_HEADER=1
+    if [-vld] == [%3] (
+        echo "Enable VLD for Debug build"
+        SET VLD_ENABLED_STATUS=1
+    ) else (
+        SET VLD_ENABLED_STATUS=0
+        echo "Not Enable VLD for Debug build"
+    )
 )
 
 SET USER_BUILD_DEPLIB[0]=%ROOT_C3D%\dep_%TYPE_Debug%
@@ -84,9 +91,6 @@ IF /i %Arg1%==%ACTION_Generate% (
         SET ACTION=%ACTION_Project%
         @REM goto DepBuild
         ) ELSE (
-            IF /i %Arg1%==%ACTION_Extract% (
-            SET ACTION=%ACTION_Extract%
-            ) ELSE (
                 IF /i %Arg1%==%ACTION_DepBuild% (
                 SET ACTION=%ACTION_DepBuild%
                 goto DepBuild
@@ -106,9 +110,6 @@ IF /i %Arg1%==%ACTION_Generate% (
 
 :GenerateC3d_Before
 echo "Current ACTION = GenerateC3d_Before"
-IF %ACTION%==%ACTION_Extract% (
-    goto ExtractSource
-) 
 IF %ACTION%==%ACTION_Generate% (
     goto GenerateC3d
 ) ELSE (
@@ -145,25 +146,6 @@ if %ACTION% == %ACTION_AllGenerate% (
     )
 )
 
-:ExtractSource
-@REM Extract thirdDeps.zip
-cd %ROOT%
-echo "Goto ExtractSource"
-IF /i %Arg2%==%TYPE_Debug% (
-    echo "unzip deps debug"
-    call extract_deps.bat %ROOT% Debug || exit /b 1
-) else (
-    echo "unzip deps release"
-    call extract_deps.bat %ROOT%  || exit /b 1
-)
-
-:ExtractSource_After
-if %ACTION% == %ACTION_Extract% (   
-    exit /b 0
-) ELSE (
-    goto GenerateC3d_Before
-)
-
 :GenerateC3d
 echo GenerateC3d
 SET CALL_RUN_GETTEXT=FALSE
@@ -173,9 +155,6 @@ if exist "!USER_BUILD_DEPLIB[%index%]!" (
 )
 if !LIST_C3d[%index%]!==ON (
     echo LIST_DEPS_LIB[%index%] is !LIST_DEPS_LIB[%index%]!
-    if not exist "!LIST_DEPS_LIB[%index%]!" (
-        goto ExtractSource
-    )
     @REM Remove orca build dir if exist
     SET C3D_BUILD_DIR=%ROOT_C3D%\build_!LIST_TYPE[%index%]!
     @REM IF EXIST !C3D_BUILD_DIR!\ (
@@ -192,7 +171,7 @@ if !LIST_C3d[%index%]!==ON (
     cd build_!LIST_TYPE[%index%]!
     SET DEP_INSTALL_DIR=!LIST_DEPS_LIB[%index%]!
     echo cmake .. -G "%VS_Version%" -A x64 -DGENERATE_ORCA_HEADER=!SLICER_HEADER! -DBBL_RELEASE_TO_PUBLIC=1 -DCMAKE_PREFIX_PATH="!DEP_INSTALL_DIR!\usr\local" -DCMAKE_INSTALL_PREFIX="./CrealityPrint" -DCMAKE_BUILD_TYPE=!LIST_TYPE[%index%]! -DWIN10SDK_PATH="%WindowsSdkDir%Include\%WindowsSDKLibVersion%"
-    cmake .. -G "%VS_Version%" -A x64 -DGENERATE_ORCA_HEADER=!SLICER_HEADER! -DBBL_RELEASE_TO_PUBLIC=1 -DCMAKE_PREFIX_PATH="!DEP_INSTALL_DIR!\usr\local" -DCMAKE_INSTALL_PREFIX="./CrealityPrint" -DCMAKE_BUILD_TYPE=!LIST_TYPE[%index%]! -DWIN10SDK_PATH="%WindowsSdkDir%Include\%WindowsSDKLibVersion%" || exit /b 1
+    cmake .. -G "%VS_Version%" -A x64 -DCMAKE_VLD_ENABLED=%VLD_ENABLED_STATUS% -DGENERATE_ORCA_HEADER=!SLICER_HEADER! -DBBL_RELEASE_TO_PUBLIC=1 -DCMAKE_PREFIX_PATH="!DEP_INSTALL_DIR!\usr\local" -DCMAKE_INSTALL_PREFIX="./CrealityPrint" -DCMAKE_BUILD_TYPE=!LIST_TYPE[%index%]! -DWIN10SDK_PATH="%WindowsSdkDir%Include\%WindowsSDKLibVersion%" || exit /b 1
 
     @REM call text
     IF NOT !CALL_RUN_GETTEXT!==TRUE (
@@ -245,8 +224,6 @@ echo -------------------------Help-------------------------
 echo C3d:
 echo project_build.bat DepBuild Debug
 echo project_build.bat DepBuild Release
-echo project_build.bat ExtractDeps  Debug
-echo project_build.bat ExtractDeps  Release
 echo project_build.bat Generate  Debug
 echo project_build.bat Generate  Release
 echo project_build.bat AllGenerate  Debug

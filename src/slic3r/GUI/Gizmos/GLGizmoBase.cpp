@@ -237,9 +237,8 @@ bool GLGizmoBase::update_items_state()
 
 bool GLGizmoBase::GizmoImguiBegin(const std::string &name, int flags)
 {
-    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding,
-                        ImVec2(8.0f, (30.0f * m_parent.get_scale() - ImGui::GetFontSize()) / 2.0)); // use for titlebar
-    bool result = m_imgui->begin(name, flags);
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, (30.0f * m_parent.get_scale() - ImGui::GetFontSize()) / 2.0)); // use for titlebar
+    bool result = m_imgui->begin_with_drag(name, flags);
     ImGui::PopStyleVar(1);
     return result;
 }
@@ -267,7 +266,8 @@ void GLGizmoBase::GizmoImguiSetNextWIndowPos(float &x, float y, float w, float h
         }
     }
 
-    m_imgui->set_next_window_pos(x, y, flag, pivot_x, pivot_y);
+    m_imgui->set_draggable_window_pos(x, y, flag, pivot_x, pivot_y);
+    //m_imgui->set_next_window_pos(x, y, flag, pivot_x, pivot_y);
 }
 
 void GLGizmoBase::register_grabbers_for_picking()

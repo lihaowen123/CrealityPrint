@@ -1,8 +1,8 @@
 #ifndef slic3r_Format_AssimpModel_hpp_
 #define slic3r_Format_AssimpModel_hpp_
 
-#include "../assimp/scene.h"
-
+//#include "../assimp/scene.h"
+#include "libslic3r/Model.hpp"
 namespace Slic3r {
 
 class TriangleMesh;

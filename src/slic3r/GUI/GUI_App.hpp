@@ -336,9 +336,11 @@ private:
     bool            OnInit() override;
     int             OnExit() override;
     void            track_event(const std::string& event, const std::string& data);
+    void            OnUnhandledException()  override;
     bool            initialized() const { return m_initialized; }
     inline bool     is_enable_multi_machine() { return this->app_config&& this->app_config->get("enable_multi_machine") == "true"; }
     int             get_server_port() { return m_http_server.get_port(); }
+    HttpServer*     get_server() { return &m_http_server;}
     std::map<std::string, bool> test_url_state;
     void            reinit_downloader();
     //BBS: remove GCodeViewer as seperate APP logic
@@ -371,6 +373,8 @@ private:
 
     wxString get_inf_dialog_contect () {return m_info_dialog_content;};
 
+    bool send_app_message(const std::string& msg,bool bforce = false);
+    void reload_homepage();
     std::vector<std::string> split_str(std::string src, std::string separator);
     // To be called after the GUI is fully built up.
     // Process command line parameters cached in this->init_params,
@@ -534,6 +538,8 @@ private:
     bool            check_privacy_update();
     void            check_privacy_version(int online_login = 0);
     void            check_track_enable();
+    void            check_creality_privacy_version();
+    void            save_privacy_version();
 
     static bool     catch_error(std::function<void()> cb, const std::string& err);
 
@@ -745,6 +751,7 @@ private:
     bool                    m_config_corrupted { false };
     std::string             m_open_method;
     bool                    need_exit_{false};
+    json                    privacyData;
     
     std::mutex                                                                         download_mtx_;
     std::list<std::tuple<wxString, wxString, wxString, wxString, wxString>> download_tasks_;

@@ -1717,22 +1717,26 @@ namespace DoExport {
         double total_weight          = 0.0;
         double total_cost            = 0.0;
 
-        for (auto volume : result.print_statistics.total_volumes_per_extruder) {
-            total_extruded_volume += volume.second;
+        auto calc_statistics = [&](const std::map<size_t, double>& total_volumes_per_extruder) {
+            for (auto volume : total_volumes_per_extruder) {
+                total_extruded_volume += volume.second;
 
-            size_t extruder_id = volume.first;
-            auto extruder = std::find_if(extruders.begin(), extruders.end(), [extruder_id](const Extruder& extr) {return extr.id() == extruder_id; });
-            if (extruder == extruders.end())
-                continue;
+                size_t extruder_id = volume.first;
+                auto   extruder    = std::find_if(extruders.begin(), extruders.end(),
+                                                  [extruder_id](const Extruder& extr) { return extr.id() == extruder_id; });
+                if (extruder == extruders.end())
+                    continue;
 
-            double s = PI * sqr(0.5* extruder->filament_diameter());
-            double weight = volume.second * extruder->filament_density() * 0.001;
-            total_used_filament += volume.second/s;
-            total_weight        += weight;
-            total_cost          += weight * extruder->filament_cost() * 0.001;
-        }
+                double s      = PI * sqr(0.5 * extruder->filament_diameter());
+                double weight = volume.second * extruder->filament_density() * 0.001;
+                total_used_filament += volume.second / s;
+                total_weight += weight;
+                total_cost += weight * extruder->filament_cost() * 0.001;
+            }
+        };
 
-        total_cost += config.time_cost.getFloat() * (normal_print_time/3600.0);
+        calc_statistics(result.print_statistics.total_volumes_per_extruder);
+        calc_statistics(result.print_statistics.flush_per_filament);
 
         print_statistics.total_extruded_volume = total_extruded_volume;
         print_statistics.total_used_filament   = total_used_filament;
@@ -1846,6 +1850,8 @@ double GCode::getLimitSpeed()
 
 void GCode::do_export(Print* print, const char* path, GCodeProcessorResult* result, ThumbnailsGeneratorCallback thumbnail_cb)
 {
+    BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << " start " << " export path " << path;
+
     PROFILE_CLEAR();
 
     // BBS
@@ -1858,7 +1864,7 @@ void GCode::do_export(Print* print, const char* path, GCodeProcessorResult* resu
     if (print->is_step_done(psGCodeExport) && boost::filesystem::exists(boost::filesystem::path(path)))
         return;
 
-    BOOST_LOG_TRIVIAL(info) << boost::format("Will export G-code to %1% soon")%path;
+    BOOST_LOG_TRIVIAL(error) << boost::format("Will export G-code to %1% soon")%path;
     GCodeProcessor::s_IsBBLPrinter = print->is_BBL_printer();
     print->set_started(psGCodeExport);
 
@@ -1878,7 +1884,7 @@ void GCode::do_export(Print* print, const char* path, GCodeProcessorResult* resu
         BOOST_LOG_TRIVIAL(warning) << temp;
     }
 
-    BOOST_LOG_TRIVIAL(info) << "Exporting G-code..." << log_memory_info();
+    BOOST_LOG_TRIVIAL(error) << "Exporting G-code..." << log_memory_info();
 
     // Remove the old g-code if it exists.
     
@@ -1941,7 +1947,7 @@ void GCode::do_export(Print* print, const char* path, GCodeProcessorResult* resu
     }
 #endif
 
-    BOOST_LOG_TRIVIAL(debug) << "Start processing gcode, " << log_memory_info();
+    BOOST_LOG_TRIVIAL(error) << "Start processing gcode, " << log_memory_info();
     // Post-process the G-code to update time stamps.
 
     m_timelapse_warning_code = 0;
@@ -1994,19 +2000,21 @@ void GCode::do_export(Print* print, const char* path, GCodeProcessorResult* resu
     }
 
     //BBS: add some log for error output
-    BOOST_LOG_TRIVIAL(debug) << boost::format("Finished processing gcode to %1% ") % path_tmp;
+    BOOST_LOG_TRIVIAL(error) << boost::format("Finished processing gcode to %1% ") % path_tmp;
 
     std::error_code ret = rename_file(path_tmp, path);
     if (ret) {
+        BOOST_LOG_TRIVIAL(error) << (std::string("Failed to rename the output G-code file from ") + path_tmp + " to " + path + '\n' +
+                                     "error code " + ret.message() + '\n' + "Is " + path_tmp + " locked?" + '\n');
         throw Slic3r::RuntimeError(
             std::string("Failed to rename the output G-code file from ") + path_tmp + " to " + path + '\n' + "error code " + ret.message() + '\n' +
             "Is " + path_tmp + " locked?" + '\n');
     }
     else {
-        BOOST_LOG_TRIVIAL(info) << boost::format("rename_file from %1% to %2% successfully")% path_tmp % path;
+        BOOST_LOG_TRIVIAL(error) << boost::format("rename_file from %1% to %2% successfully")% path_tmp % path;
     }
 
-    BOOST_LOG_TRIVIAL(info) << "Exporting G-code finished" << log_memory_info();
+    BOOST_LOG_TRIVIAL(error) << "Exporting G-code finished" << log_memory_info();
     print->set_done(psGCodeExport);
     
     if(is_BBL_Printer())
@@ -2015,6 +2023,7 @@ void GCode::do_export(Print* print, const char* path, GCodeProcessorResult* resu
     // Write the profiler measurements to file
     PROFILE_UPDATE();
     PROFILE_OUTPUT(debug_out_path("gcode-export-profile.txt").c_str());
+    BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << " end";
 }
 
 // free functions called by GCode::_do_export()
@@ -2237,6 +2246,7 @@ static BambuBedType to_bambu_bed_type(BedType type)
 
 void GCode::_do_export(Print& print, GCodeOutputStream &file, ThumbnailsGeneratorCallback thumbnail_cb)
 {
+    BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << " start";
     PROFILE_FUNC();
 
     // modifies m_silent_time_estimator_enabled
@@ -3198,7 +3208,6 @@ void GCode::_do_export(Print& print, GCodeOutputStream &file, ThumbnailsGenerato
       append_full_config(print, full_config);
       if (!full_config.empty())
         file.write(full_config);
-
       // SoftFever: write compatiple info
       int first_layer_bed_temperature = get_bed_temperature(0, true, print.config().curr_bed_type);
       file.write_format("; first_layer_bed_temperature = %d\n", first_layer_bed_temperature);
@@ -3215,6 +3224,8 @@ void GCode::_do_export(Print& print, GCodeOutputStream &file, ThumbnailsGenerato
     file.write("\n");
 
     print.throw_if_canceled();
+
+    BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << " end";
 }
 
 //BBS
@@ -4329,7 +4340,7 @@ LayerResult GCode::process_layer(
         sprintf(buf, "; Calib_Retraction_tower: Z_HEIGHT: %g, length:%g\n", print_z, _length);
         gcode += buf;
     } else if (print.calib_mode() == CalibMode::Calib_Retraction_tower_speed) {
-        auto          _speed = print.calib_params().start + std::floor(std::max(0.0, print_z - 0.4) / 2.63) * print.calib_params().step;
+        auto          _speed = print.calib_params().start + std::floor(std::max(0.0, print_z-0.2+0.001)) * print.calib_params().step;
         DynamicConfig _cfg;
         _cfg.set_key_value("retraction_speed", new ConfigOptionFloats{_speed});
         _cfg.set_key_value("deretraction_speed", new ConfigOptionFloats{_speed});

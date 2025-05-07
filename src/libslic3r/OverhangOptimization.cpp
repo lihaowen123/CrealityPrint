@@ -271,7 +271,7 @@ namespace Slic3r {
 		float span_c = M_PI / (2.f*(float)smooth_n);
 		for (int si = 0; si < smooth_n; si++)
 		{
-			cos_r.push_back(cosf(0.0f + si*span_c));
+			cos_r.push_back((float)std::cos(0.0f + si*span_c));
 		}
 
 		int frist_change = 0;

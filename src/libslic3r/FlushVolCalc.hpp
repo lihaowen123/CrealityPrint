@@ -1,6 +1,8 @@
 #ifndef slic3r_FlushVolCalc_hpp_
 #define slic3r_FlushVolCalc_hpp_
 
+#include "PresetBundle.hpp"
+#include "PrintConfig.hpp"
 namespace Slic3r {
 
 extern const int g_min_flush_volume_from_support;
@@ -24,7 +26,7 @@ private:
     float m_multiplier;
 };
 
-
+void recalc_flushing_volumes(DynamicPrintConfig& config, PresetBundle& bundle);
 }
 
 #endif

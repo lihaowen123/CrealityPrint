@@ -771,7 +771,7 @@ msgid "Reconnecting"
 msgstr "Reconnecting"
 
 msgid "Creality Print camera function does not currently support devices that are only bound to Creality Cloud"
-msgstr "Creality Print摄像头功能暂不支持仅绑定创想云的设备"
+msgstr "Creality Print camera function does not currently support devices that are only bound to Creality Cloud"
 
 msgid "Feed issue, filament failed to exit extruder.Please resolve and click 'Retry' button."
 msgstr "Feed issue, filament failed to exit extruder.Please resolve and click 'Retry' button."
@@ -781,3 +781,94 @@ msgstr "During device self-test, printing and sending files are not supported"
 
 msgid "Self checking"
 msgstr "Self checking"
+
+msgid "Hotbed failed to return to the maximum Z-axis position or tilt calibration at this position failed,please try again after resolving."
+msgstr "Hotbed failed to return to the maximum Z-axis position or tilt calibration at this position failed,please try again after resolving."
+
+msgid "Abnormal resistance in the Y-axis movement direction,  motor released. Fix issue and restart."
+msgstr "Abnormal resistance in the Y-axis movement direction,  motor released. Fix issue and restart."
+
+msgid "Abnormal resistance under the hotbed, motor released. Fix issue and restart."
+msgstr "Abnormal resistance under the hotbed, motor released. Fix issue and restart."
+
+msgid "Extruder extrusion anomaly, possible clog or blockage. motor released."
+msgstr "Extruder extrusion anomaly, possible clog or blockage. motor released."
+
+msgid "Extruder speed limit exceeded. The motor will be released. Please reduce the extruder movement speed."
+msgstr "Extruder speed limit exceeded. The motor will be released. Please reduce the extruder movement speed."
+
+msgid "Y motor identification error detected. The motor wire may be connected improperly or the motor may be damaged."
+msgstr "Y motor identification error detected. The motor wire may be connected improperly or the motor may be damaged."
+
+msgid "Z1 motor identification error detected. The motor wire may be connected improperly or the motor may be damaged."
+msgstr "Z1 motor identification error detected. The motor wire may be connected improperly or the motor may be damaged."
+
+msgid "Z2 motor identification error detected. The motor wire may be connected improperly or the motor may be damaged."
+msgstr "Z2 motor identification error detected. The motor wire may be connected improperly or the motor may be damaged."
+
+msgid "E motor identification error detected. The motor wire may be connected improperly or the motor may be damaged."
+msgstr "E motor identification error detected. The motor wire may be connected improperly or the motor may be damaged."
+
+msgid "[x or y or e] axis servo motor hardware abnormality/[z1 or z2] axis servo motor hardware abnormality, the platform plate will drop"
+msgstr "[x or y or e] axis servo motor hardware abnormality/[z1 or z2] axis servo motor hardware abnormality, the platform plate will drop"
+
+
+msgid "Chamber heater fan abnormal, chamber heating closed."
+msgstr "Chamber heater fan abnormal, chamber heating closed."
+
+msgid "Belt tension module error, left side belt communication line may be connected improperly. "
+msgstr "Belt tension module error, left side belt communication line may be connected improperly."
+
+msgid "Belt tension module error, right side belt tension module not calibrated, please recalibrate the module."
+msgstr "Belt tension module error, right side belt tension module not calibrated, please recalibrate the module."
+
+msgid "Belt tension module error, left side belt tension module not calibrated, please recalibrate the module. "
+msgstr "Belt tension module error, left side belt tension module not calibrated, please recalibrate the module. "
+
+msgid "Belt tension module error, please troubleshoot and try recalibrating. "
+msgstr "Belt tension module error, please troubleshoot and try recalibrating."
+
+msgid "Belt tension timeout failure, please try retightening or restarting. "
+msgstr "Belt tension timeout failure, please try retightening or restarting. "
+
+msgid "Abnormal belt tensioning module, right belt tensioning module calibration value abnormal, please recalibrate the module."
+msgstr "Abnormal belt tensioning module, right belt tensioning module calibration value abnormal, please recalibrate the module."
+
+msgid "Abnormal belt tensioning module, left belt tensioning module calibration value abnormal, please recalibrate the module."
+msgstr "Abnormal belt tensioning module, left belt tensioning module calibration value abnormal, please recalibrate the module."
+
+msgid "Hotbed failed to reach the maximum position. Check for sensor issues or bed tilt.Please check and retry."
+msgstr "Hotbed failed to reach the maximum position. Check for sensor issues or bed tilt.Please check and retry."
+
+msgid "Abnormal heat break fan"
+msgstr "Abnormal heat break fan"
+
+msgid "MCU task scheduling failed, possibly due to high load or communication issues."
+msgstr "MCU task scheduling failed, possibly due to high load or communication issues."
+
+msgid "Extruder MCU temperature is too high, possibly due to high chamber temperature or delayed cooling of the extruder motherboard."
+msgstr "Extruder MCU temperature is too high, possibly due to high chamber temperature or delayed cooling of the extruder motherboard."
+
+msgid "Cutter not detected."
+msgstr "Cutter not detected."
+
+msgid "Feed issue, filament buffer failure. Please resolve and click \"Retry\" button."
+msgstr "Feed issue, filament buffer failure. Please resolve and click \"Retry\" button."
+
+msgid "Detected printing plate is missing, printing paused"
+msgstr "Detected printing plate is missing, printing paused"
+
+msgid "Detected printing plate is missing and foreign object on the printing plate, printing paused"
+msgstr "Detected printing plate is missing and foreign object on the printing plate, printing pause"
+
+msgid "Flow ratio calibration image anomaly, printing with default values."
+msgstr "Flow ratio calibration image anomaly, printing with default values."
+
+msgid "Flow ratio calibration failed, printing with default values."
+msgstr "Flow ratio calibration failed, printing with default values."
+
+msgid "Detected waste chute is block. "
+msgstr "Detected waste chute is block."
+
+msgid "Nozzle  camera failed to start, try restarting."
+msgstr "Nozzle  camera failed to start, try restarting."

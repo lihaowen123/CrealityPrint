@@ -580,7 +580,7 @@ MeshErrorsInfo ObjectList::get_mesh_errors_info(const int obj_idx, const int vol
         *non_manifold_edges = stats.open_edges;
 
     if (is_windows10() && !sidebar_info)
-        tooltip += "\n" + _L("Right click the icon to fix model object");
+        tooltip += "\n" + _L("Left click the icon to fix model object");
 
     return { tooltip, get_warning_icon_name(stats) };
 }
@@ -4714,7 +4714,7 @@ void ObjectList::update_selections_on_canvas()
     }
 
     if (canvas_type != GLCanvas3D::ECanvasType::CanvasPreview)
-        wxGetApp().plater()->get_current_canvas3D()->update_gizmos_on_off_state();
+        wxGetApp().plater()->get_current_canvas3D()->on_object_list_selected();
     wxGetApp().plater()->canvas3D()->render();
 }
 
@@ -5919,6 +5919,8 @@ void ObjectList::update_after_undo_redo()
 wxDataViewItemArray ObjectList::reorder_volumes_and_get_selection(int obj_idx, std::function<bool(const ModelVolume*)> add_to_selection/* = nullptr*/)
 {
     wxDataViewItemArray items;
+    if (obj_idx < 0 || obj_idx >= (*m_objects).size())
+        return items;
 
     ModelObject* object = (*m_objects)[obj_idx];
     if (object->volumes.size() <= 1)
@@ -6134,7 +6136,7 @@ void ObjectList::render_plate_tree_by_ImGui()
 
 
     // HelpMarker("See \"Columns flags\" section to configure how indentation is applied to individual columns.");
-    if (ImGui::BeginTable("##obj_table", num_var_column + 2, flags, ImVec2(ImGui::GetCurrentWindow()->Size.x - 10.0f, table_h))) {
+    if (ImGui::BeginTable("##obj_table", num_var_column + 2, flags, ImVec2(ImGui::GetCurrentWindow()->Size.x - 15.0f, table_h))) {
         // The first column will use the default _WidthStretch when ScrollX is Off and _WidthFixed when ScrollX is On
         ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_NoHide | ImGuiTableColumnFlags_WidthStretch);
         
@@ -6151,7 +6153,7 @@ void ObjectList::render_plate_tree_by_ImGui()
         //ImGui::TableSetupColumn("Sinking", flags, icon_size);
         //ImGui::TableSetupColumn("UndoSettings", flags, icon_size);
 
-        ImGui::TableSetupColumn("Extruder", flags, 40.0f * view_scale);
+        ImGui::TableSetupColumn("Extruder", flags, 44.0f * view_scale);
 
         for (size_t i = 0; i < all_plates.size(); i++) {
             wxDataViewItem&          p    = all_plates[i];
@@ -6971,12 +6973,13 @@ void ObjectList::render_generic_columns(ObjectDataViewModelNode* node)
             ImGui::PushStyleColor(ImGuiCol_FrameBg, filament_color);
             ImGui::PushStyleColor(ImGuiCol_Text, title_color);
             ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, ImGui::GetFrameHeight() / 2.0);
-            ImGui::PushItemWidth(40.0f * view_scale);
+            
+            const float ext_column_width = ImGui::GetColumnWidth();
+            ImGui::PushItemWidth(ext_column_width);
 
             if (ImGui::BeginCombo((std::string(unique_label) + "_combo").c_str(), "",
                                   ImGuiComboFlags_NoArrowButton | ImGuiComboFlags_HeightLargest)) {
                 ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0);
-                ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));
 
                 for (int n = 0; n < ext_names.size(); n++) {
                     const std::string& cur_name = ext_names[n];
@@ -6990,8 +6993,15 @@ void ObjectList::render_generic_columns(ObjectDataViewModelNode* node)
                     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, sub_color);
                     ImGui::PushStyleColor(ImGuiCol_ButtonActive, sub_color);
                     ImGui::PushStyleColor(ImGuiCol_Text, text_color);
+                    ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0, 0, 0, 0));
+                    
+                    float  w    = ImGui::CalcTextSize(_u8L("default").c_str()).x + ImGui::GetStyle().FramePadding.x * 2.0;
+                    w           = std::max(w, 50.0f * view_scale);
+                    ImVec2 size = ImVec2(w, ImGui::GetFrameHeight());
 
-                    if (ImGui::Selectable(("##" + cur_name).c_str(), is_selected, ImGuiSelectableFlags_None)) {
+                    ImVec2 sel_pos = ImGui::GetCursorPos();
+
+                    if (ImGui::Selectable(("##" + cur_name).c_str(), is_selected, ImGuiSelectableFlags_None, size)) {
                         if (cur_name == _u8L("default")) {
                             node->SetExtruder(_(L("default")));
                         } else {
@@ -7003,11 +7013,9 @@ void ObjectList::render_generic_columns(ObjectDataViewModelNode* node)
                             m_objects_model->UpdateVolumesExtruderBitmap(item, true);
                         update_filament_in_config(item);
                     }
-
-                    ImGui::SameLine();
-
-                    ImVec2 size = ImVec2(50 * view_scale, 20 * view_scale);
-
+                    
+                    ImGui::SetCursorPos(sel_pos);
+                    
                     if (cur_name == _u8L("default")) {
                         ImVec2 pp     = ImGui::GetCursorPos();
                         auto   tex_id = DispConfig().getTextureId(DispConfig::e_tt_retangle_transparent, false, false);
@@ -7017,17 +7025,12 @@ void ObjectList::render_generic_columns(ObjectDataViewModelNode* node)
 
                     ImGui::Button(cur_name.c_str(), size);
 
-                    ImGui::SameLine();
-                    ImGui::InvisibleButton("##", ImVec2(0.1, 25 * view_scale));
-
-                    ImGui::PopStyleColor(4);
+                    ImGui::PopStyleColor(5);
 
                     // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
                     if (is_selected)
                         ImGui::SetItemDefaultFocus();
                 }
-
-                ImGui::PopStyleVar(1);
                 ImGui::PopStyleVar(1);
                 ImGui::EndCombo();
             }
@@ -7045,7 +7048,7 @@ void ObjectList::render_generic_columns(ObjectDataViewModelNode* node)
 
                 ImGui::SetCursorPos(pos);
                 auto tex_id = DispConfig().getTextureId(DispConfig::e_tt_rounding_transparent, false, false);
-                ImGui::Image(tex_id, ImVec2(40.0f * view_scale, ImGui::GetFrameHeight()));
+                ImGui::Image(tex_id, ImVec2(ext_column_width, ImGui::GetFrameHeight()));
 
                 /*ImGui::PopStyleColor(1);
                 ImGui::PopStyleVar(1);*/
@@ -7054,13 +7057,41 @@ void ObjectList::render_generic_columns(ObjectDataViewModelNode* node)
             // draw text
             {
                 float       item_width = ImGui::CalcItemWidth();
-                const char* t          = ext_names[ext_idx].c_str();
-                ImVec2      text_size  = ImGui::CalcTextSize(t);
+                std::string ext_name = ext_names[ext_idx];
+                ImVec2      text_size  = ImGui::CalcTextSize(ext_name.c_str());
+                bool        need_tooltips = false;
+                if (text_size.x > item_width) {
+                    const char* ellipsis       = "...";
+                    const float ellipsis_width = ImGui::CalcTextSize(ellipsis).x;
+                    size_t      name_length    = ext_name.length();
+                    for (size_t i = name_length - 1; i >= 0; i--) {
+                        std::string sub_name           = ext_name.substr(0, i);
+                        std::string name_with_ellipsis = sub_name + ellipsis;
+                        const float sub_width          = ImGui::CalcTextSize((name_with_ellipsis).c_str()).x;
+                        if (sub_width <= item_width) {
+                            ext_name = name_with_ellipsis;
+                            text_size.x = sub_width;
+                            need_tooltips = true;
+                            break;
+                        }
+                    }
+                }
 
                 float x = pos.x + (item_width - text_size.x) * 0.5f;
                 ImGui::SetCursorPos(ImVec2(x, pos.y + style.FramePadding.y));
 
-                ImGui::Text(t);
+                ImGui::Text(ext_name.c_str());
+
+                if (need_tooltips) {
+                    if (ImGui::IsItemHovered()) {
+                        ImVec4 text_color = is_dark ? ImVec4(1.0, 1.0, 1.0, 1.0) : ImVec4(51 / 255.0, 51 / 255.0, 51 / 255.0, 1.0);
+                        ImGui::PushStyleColor(ImGuiCol_Text, text_color);
+
+                        ImGui::SetTooltip(ext_names[ext_idx].c_str());
+
+                        ImGui::PopStyleColor();
+                    }
+                }
 
                 ImGui::PopItemWidth();
                 ImGui::PopStyleVar(1);
@@ -7624,14 +7655,14 @@ void ObjectList::set_object_list_window_focus(bool f)
         m_obj_list_window_focus = f;
 }
 
-void ObjectList::on_char(wxKeyEvent& evt) {
+bool ObjectList::on_char(wxKeyEvent& evt) {
 
     bool can_edit = wxGetApp().plater()->get_current_canvas3D()->get_canvas_type() != GLCanvas3D::CanvasAssembleView;
     if (!can_edit)
-        return;
+        return false;
 
     if (!get_object_list_window_focus())
-        return;
+        return false;
 
     int keyCode   = evt.GetKeyCode();
     int ctrlMask  = wxMOD_CONTROL;
@@ -7639,7 +7670,7 @@ void ObjectList::on_char(wxKeyEvent& evt) {
 
     // CTRL is pressed
     bool CTRL_pressed = ((evt.GetModifiers() & ctrlMask) != 0);
-   
+    bool processed    = false;
     switch (keyCode) {
         case WXK_RETURN:
         case WXK_SPACE: {
@@ -7649,14 +7680,42 @@ void ObjectList::on_char(wxKeyEvent& evt) {
 
                 rename_plate();
                 rename_item();
+                processed = true;
             }
             break;
+            
+        }
+
+        case WXK_DELETE: {
+            //process item(itLayer, itLayerRoot) delete event
+            //others will pass by: EVT_GLTOOLBAR_DELETE -> Plater::remove_selected -> GLCanvas3D::delete_selected -> Selection::erase
+            wxDataViewItemArray sels;
+            GetSelections(sels);
+            if (!sels.IsEmpty()) {   
+                auto & f = sels.front();
+                if (f.IsOk()) {
+                    ItemType type = m_objects_model->GetItemType(f);
+                    if (type == ItemType::itLayer || type == ItemType::itLayerRoot) {
+                        remove();
+                        processed = true;
+                    }
+                }
+            }
         }
     }
+
+    return processed;
 }
 
 void ObjectList::on_key(wxKeyEvent& evt) 
 {
+    bool can_edit = wxGetApp().plater()->get_current_canvas3D()->get_canvas_type() != GLCanvas3D::CanvasAssembleView;
+    if (!can_edit)
+        return;
+
+    if (!get_object_list_window_focus())
+        return;
+
     const int keyCode = evt.GetKeyCode();
 
     bool node_selected    = false;

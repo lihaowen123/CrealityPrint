@@ -71,6 +71,7 @@
 #include "libslic3r/ClipperUtils.hpp"
 #ifdef _WIN32
 #include "libslic3r/UnittestFlow.hpp"
+#include "libslic3r/AutomationMgr.hpp"
 #endif
 // For stl export
 #include "libslic3r/CSGMesh/ModelToCSGMesh.hpp"
@@ -915,6 +916,15 @@ Sidebar::Sidebar(Plater *parent)
             return;
 
         p->m_cx_panel_filament_content->IsShown() ? p->m_cx_panel_filament_content->Hide() : p->m_cx_panel_filament_content->Show();
+        if(p->m_cx_panel_filament_content->IsShown())
+        {
+            if(p->m_cx_panel_box_filament->isMultiColorDevice())
+                p->m_cx_panel_box_filament->Show();
+            else
+                p->m_cx_panel_box_filament->Hide();
+        }else{
+            p->m_cx_panel_box_filament->Hide();
+        }
         m_scrolled_sizer->Layout();
     });
     // 添加鼠标悬停事件
@@ -1077,6 +1087,7 @@ Sidebar::Sidebar(Plater *parent)
             return;
 
         p->m_cx_panel_filament_content->IsShown() ? p->m_cx_panel_filament_content->Hide() : p->m_cx_panel_filament_content->Show();
+        p->m_cx_panel_box_filament->IsShown() ? p->m_cx_panel_box_filament->Hide() : p->m_cx_panel_box_filament->Show();
         m_scrolled_sizer->Layout();
     });
     bSizer39->Add(fold_btn, 0, wxALIGN_CENTER);
@@ -1444,6 +1455,11 @@ void Sidebar::update_presets_from_to(Slic3r::Preset::Type preset_type, std::stri
     wxGetApp().preset_bundle->export_selections(*wxGetApp().app_config);
 
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << boost::format(": exit!");
+}
+
+void Sidebar::updateLastFilement(const std::vector<std::string>& presetName)
+{
+    p->m_cx_panel_filament_content->updateLastFilament(presetName);
 }
 
 void Sidebar::change_top_border_for_mode_sizer(bool increase_border)
@@ -2113,6 +2129,9 @@ void Sidebar::on_current_device_changed(wxCommandEvent& event)
     {
         wxGetApp().app_config->set("is_currentMachine_Colors", "0");
         show_box_filament_content(false);
+        if (p->m_cx_panel_box_filament) {
+            p->m_cx_panel_box_filament->setMultiColorDevice(false);
+        }
         if (p->m_auto_mapping_btn) {
             p->m_auto_mapping_btn->Show(false);
         }
@@ -2120,10 +2139,12 @@ void Sidebar::on_current_device_changed(wxCommandEvent& event)
     else {
         wxGetApp().app_config->set("is_currentMachine_Colors", "1");
         if (p->m_cx_panel_box_filament) {
-            p->m_cx_panel_box_filament->Show(true);
+            if(p->m_cx_panel_filament_content->IsShown())
+                p->m_cx_panel_box_filament->Show(true);
         }
 
         if (p->m_cx_panel_box_filament) {
+            p->m_cx_panel_box_filament->setMultiColorDevice(true);
             p->m_cx_panel_box_filament->update_device_data(device_data);
             
             p->m_cx_panel_filament_content->backup_extruder_colors();
@@ -3001,6 +3022,15 @@ const std::regex Plater::priv::pattern_prusa(".*bbl", std::regex::icase);
 
 bool PlaterDropTarget::OnDropFiles(wxCoord x, wxCoord y, const wxArrayString &filenames)
 {
+    std::string filename;
+    for (const auto& s : filenames) {
+        if (!filename.empty())
+            filename += ",";
+        filename += std::string(s.mb_str());
+    }
+    BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << " start filename " << filename;
+
+
 #ifdef WIN32
     // hides the system icon
     this->MSWUpdateDragImageOnLeave();
@@ -3026,6 +3056,9 @@ bool PlaterDropTarget::OnDropFiles(wxCoord x, wxCoord y, const wxArrayString &fi
     }
     bool res = m_plater.load_files(filenames);
     m_mainframe.update_title();
+
+    BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << " end ";
+
     return res;
 }
 
@@ -4019,7 +4052,7 @@ std::vector<size_t> Plater::priv::load_files(const std::vector<fs::path>& input_
     bool imperial_units = strategy & LoadStrategy::ImperialUnits;
     bool silence = strategy & LoadStrategy::Silence;
 
-    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": load_model %1%, load_config %2%, input_files size %3%")%load_model %load_config %input_files.size();
+    BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << boost::format(": load_model %1%, load_config %2%, input_files size %3%")%load_model %load_config %input_files.size();
 
     const auto loading = _L("Loading") + dots;
     ProgressDialog dlg(loading, "", 100, find_toplevel_parent(q), wxPD_AUTO_HIDE | wxPD_CAN_ABORT | wxPD_APP_MODAL);
@@ -5000,6 +5033,9 @@ std::vector<size_t> Plater::priv::load_files(const std::vector<fs::path>& input_
                 q->m_exported_file = true;
                 //select plate 0 as default
                 q->select_plate(first_plate_index);
+                // force load thumnails data to texture for ready render before switch to Preview when no model
+                preview->get_canvas3d()->enable_select_plate_toolbar(true);
+                preview->get_canvas3d()->update_plate_thumbnails(true);
                 // set to 3d tab
                 q->select_view_3D("Preview");
                 wxGetApp().mainframe->enable_tab_event(false);
@@ -5073,6 +5109,9 @@ std::vector<size_t> Plater::priv::load_files(const std::vector<fs::path>& input_
             if (msg.ShowModal() == wxID_YES) {}
         }
     }
+
+    BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << " end";
+
     return obj_idxs;
 }
 
@@ -5080,6 +5119,8 @@ std::vector<size_t> Plater::priv::load_files(const std::vector<fs::path>& input_
 
 std::vector<size_t> Plater::priv::load_model_objects(const ModelObjectPtrs& model_objects, bool allow_negative_z, bool split_object)
 {
+    BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << " start";
+
     // const Vec3d bed_size = Slic3r::to_3d(this->bed.build_volume().bounding_volume2d().size(), 1.0) - 2.0 * Vec3d::Ones();
     const Vec3d bed_size = this->bed.build_volume().bounding_volume().size();
 
@@ -5185,7 +5226,7 @@ std::vector<size_t> Plater::priv::load_model_objects(const ModelObjectPtrs& mode
         }
     }
 
-    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ":" << __LINE__ << boost::format(", loaded objects, begin to auto placement");
+    BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ":" << __LINE__ << boost::format(", loaded objects, begin to auto placement");
 #ifdef AUTOPLACEMENT_ON_LOAD
 #if 0
     // FIXME distance should be a config value /////////////////////////////////
@@ -5230,7 +5271,7 @@ std::vector<size_t> Plater::priv::load_model_objects(const ModelObjectPtrs& mode
     //        _L("Object too large?"));
     //}
 
-    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ":" << __LINE__ << boost::format(", finished auto placement, before add_objects_to_list");
+    BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ":" << __LINE__ << boost::format(", finished auto placement, before add_objects_to_list");
     notification_manager->close_notification_of_type(NotificationType::UpdatedItemsInfo);
 
     auto start = std::chrono::high_resolution_clock::now();
@@ -5249,7 +5290,7 @@ std::vector<size_t> Plater::priv::load_model_objects(const ModelObjectPtrs& mode
     std::cout << "Function took " << spend_time << " seconds to execute." << std::endl;
 
     start = std::chrono::high_resolution_clock::now();
-    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ":" << __LINE__ << boost::format(", after add_objects_to_list");
+    BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ":" << __LINE__ << boost::format(", after add_objects_to_list");
      update();
     // Update InfoItems in ObjectList after update() to use of a correct value of the GLCanvas3D::is_sinking(),
     // which is updated after a view3D->reload_scene(false, flags & (unsigned int)UpdateParams::FORCE_FULL_SCREEN_REFRESH) call
@@ -5264,6 +5305,8 @@ std::vector<size_t> Plater::priv::load_model_objects(const ModelObjectPtrs& mode
     object_list_changed();
 
     this->schedule_background_process();
+
+    BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << " end";
 
     return obj_idxs;
 }
@@ -5832,6 +5875,17 @@ void Plater::priv::process_validation_warning(StringObjectException const &warni
         auto hypertext = (mo || !warning.opt_key.empty()) ? _u8L("Jump to") : "";
         if (mo) hypertext += std::string(" [") + mo->name + "]";
         if (!warning.opt_key.empty()) hypertext += std::string(" (") + warning.opt_key + ")";
+ 
+#if AUTOMATION_TOOL
+
+#ifdef _WIN32 // 记录警告信息
+        if (AutomationMgr::enabled()) {
+            AutomationMgr::outputLog(text, 3);
+        }
+#endif // _WIN32
+
+#endif // AUTOMATION_TOOL
+
 
         // BBS disable support enforcer
         //if (text == "_SUPPORTS_OFF") {
@@ -5886,6 +5940,9 @@ unsigned int Plater::priv::update_background_process(bool force_validation, bool
     }
 
     Print::ApplyStatus invalidated = background_process.apply(this->model, wxGetApp().preset_bundle->full_config());
+
+    GUI::PartPlate * curr_plate = this->q->get_partplate_list().get_selected_plate();
+    curr_plate->color_bed_exclude_area();
 
     if ((invalidated == Print::APPLY_STATUS_CHANGED) || (invalidated == Print::APPLY_STATUS_INVALIDATED))
         // BBS: add only gcode mode
@@ -7532,7 +7589,8 @@ bool Plater::priv::warnings_dialog()
 //BBS: add project slice logic
 void Plater::priv::on_process_completed(SlicingProcessCompletedEvent &evt)
 {
-    DEFINE_PERFORMANCE_TEST("Plater::priv::on_process_completed");
+    //DEFINE_PERFORMANCE_TEST("Plater::priv::on_process_completed");
+
 
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << boost::format(": enter, m_ignore_event %1%, status %2%")%m_ignore_event %evt.status();
     //BBS:ignore cancel event for some special case
@@ -7544,6 +7602,8 @@ void Plater::priv::on_process_completed(SlicingProcessCompletedEvent &evt)
     }
     //BBS: add project slice logic
     bool is_finished = !m_slice_all || (m_cur_slice_plate == (partplate_list.get_plate_count() - 1));
+
+
 
     //BBS: slice .gcode.3mf file related logic, assign is_finished again
     bool only_has_gcode_need_preview = false;
@@ -7588,6 +7648,7 @@ void Plater::priv::on_process_completed(SlicingProcessCompletedEvent &evt)
                 if (print_object) { ptrs.push_back(print_object->model_object()); }
             }
             notification_manager->push_slicing_error_notification(message.first, ptrs);
+
         }
         if (evt.invalidate_plater())
         {
@@ -7601,11 +7662,22 @@ void Plater::priv::on_process_completed(SlicingProcessCompletedEvent &evt)
         }
         has_error = true;
         is_finished = true;
+        // 记录错误信息
+#if AUTOMATION_TOOL
+
+#ifdef _WIN32
+        if (AutomationMgr::enabled()) {
+            AutomationMgr::outputLog(message.first, 1);
+        }
+#endif
+
+#endif // AUTOMATION_TOOL
+
     }
     if (evt.cancelled()) {
         BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(", cancel event, status: %1%") % evt.status();
         this->notification_manager->set_slicing_progress_canceled(_u8L("Slicing Canceled"));
-        is_finished = true;
+        is_finished = true; 
     }
 
     //BBS: set the current plater's slice result to valid
@@ -7747,6 +7819,27 @@ void Plater::priv::on_process_completed(SlicingProcessCompletedEvent &evt)
             }
         }
     }
+
+#if AUTOMATION_TOOL
+
+#ifdef _WIN32
+    // 切片一个盘之后，判断下一个盘是否为空
+    if (AutomationMgr::enabled()) {
+        PartPlateList& plate_list = wxGetApp().plater()->get_partplate_list();
+        if (!plate_list.get_plate(m_cur_slice_plate)->can_slice()) {
+            std::string logContent = "盘" + std::to_string(m_cur_slice_plate + 1) + "不能切片";
+            AutomationMgr::outputLog(logContent, 1);
+            AutomationMgr::endFunction();
+        }
+    }
+#endif
+
+#endif // AUTOMATION_TOOL
+
+
+
+
+
 #ifdef _WIN32
     if(is_finished) {
         if (Slic3r::BLCompareTestFlow::enabled()) {
@@ -7762,6 +7855,12 @@ void Plater::priv::on_process_completed(SlicingProcessCompletedEvent &evt)
    //             std::exit(0);
 			//}
         }
+#if AUTOMATION_TOOL
+        if (Slic3r::AutomationMgr::enabled()) {
+            AutomationMgr::endFunction();
+        }
+#endif // AUTOMATION_TOOL
+        
 	}
 #endif
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << boost::format(", exit.");
@@ -8090,6 +8189,9 @@ void Plater::priv::on_action_send_to_printer(bool isall)
 
 void Plater::priv::on_action_send_to_local_net_printer(bool isall)
 {
+    // need to close the detail-page Video show, because not allowed two video stream("send page" and "detail page") at the same time
+    wxGetApp().mainframe->get_printer_mgr_view()->request_close_detail_page();
+
     CxSentToPrinterDialog dlg(this->q);
     dlg.ShowModal();
 }
@@ -10361,7 +10463,25 @@ void Plater::load_project(wxString const& filename2,
         if (BLCompareTestFlow::enabled()) {
             this->select_view_3D("Preview", false);
         }
-        
+        //slice
+#if AUTOMATION_TOOL
+        if (AutomationMgr::enabled()) {
+            if (res.empty()) {
+                AutomationMgr::outputLog("Failed to load project file", 1);
+                AutomationMgr::endFunction();
+            }
+            if (!wxGetApp().mainframe->get_enable_slice_status()) {
+                AutomationMgr::outputLog("Slice is disabled", 1);
+                AutomationMgr::endFunction();
+            }
+            // this->select_view_3D("Preview", false);
+            //  切所有盘
+            if (AutomationMgr::g_automationType == 1) {
+                SimpleEvent evt = SimpleEvent(EVT_GLTOOLBAR_SLICE_ALL);
+                this->p->on_action_slice_all(evt);
+            }
+        }
+#endif // AUTOMATION_TOOL
     }
 #endif
 }
@@ -11577,7 +11697,7 @@ void Plater::calib_retraction_speed(const Calib_Params& params)
 
     //  cut upper
     auto obj_bb = obj->bounding_box_exact();
-    auto height = 2.63 +0.4 + (params.end - params.start) * 2.63 / params.step;
+    auto height = 1 + (params.end - params.start) / params.step;
 
     if (height < obj_bb.size().z()) {
         cut_horizontal(0, 0, height, ModelObjectCutAttribute::KeepLower);
@@ -12199,7 +12319,15 @@ void Plater::load_gcode()
 void Plater::load_gcode(const wxString& filename)
 {
     BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << __LINE__ << " entry and filename: " << filename;
-    BOOST_LOG_TRIVIAL(info) << __FUNCTION__;
+    BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << " start memory info " << log_memory_info() << "\n entry and filename: " << filename;
+   
+    GCodeLoadingGuard guard(m_isLoadingGCode); 
+
+    if (!guard.IsLockAcquired()) { 
+        BOOST_LOG_TRIVIAL(error) << "Plater::load_gcode - Re-entrancy detected or already loading G-code " << filename
+                                 << " Request ignored. ";
+        return; 
+    }
     //Creality: need reload
     if (! is_gcode_file(into_u8(filename))
         )
@@ -12296,17 +12424,22 @@ void Plater::load_gcode(const wxString& filename)
     double total_cost = 0.0;
     double total_used_filament = 0.0;
     double total_weight = 0.0;
-    for (auto volume : ps.total_volumes_per_extruder) {
-        size_t extruder_id = volume.first;
-        double density = current_result->filament_densities.at(extruder_id);
-        double cost = current_result->filament_costs.at(extruder_id);
-        double weight = volume.second * density * 0.001;
-        double s = PI * sqr(0.5* current_result->filament_diameters.at(extruder_id));
+    auto calc_statistics = [&](const std::map<size_t, double>& volumes_per_extruder) {
+        for (auto volume : volumes_per_extruder) {
+            size_t extruder_id = volume.first;
+            double density = current_result->filament_densities.at(extruder_id);
+            double cost = current_result->filament_costs.at(extruder_id);
+            double weight = volume.second * density * 0.001;
+            double s = PI * sqr(0.5 * current_result->filament_diameters.at(extruder_id));
 
-        total_cost += weight * cost * 0.001;
-        total_used_filament += volume.second / s;
-        total_weight        += weight;
-    }
+            total_cost += weight * cost * 0.001;
+            total_used_filament += volume.second / s;
+            total_weight += weight;
+        }
+    };
+
+    calc_statistics(ps.total_volumes_per_extruder);
+    calc_statistics(ps.flush_per_filament);
 
     current_print.print_statistics().total_used_filament = total_used_filament;
     current_print.print_statistics().total_weight = total_weight;
@@ -12362,6 +12495,8 @@ void Plater::load_gcode(const wxString& filename)
     } else {
         set_project_filename(filename);
     }
+
+    BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << " end memory info " << log_memory_info();
 
 #if _DEBUG
     {
@@ -12979,7 +13114,13 @@ void ProjectDropDialog::on_dpi_changed(const wxRect& suggested_rect)
 //BBS: remove GCodeViewer as seperate APP logic
 bool Plater::load_files(const wxArrayString& filenames)
 {
-    DEFINE_PERFORMANCE_TEST("Plater::load_files");
+    std::string filename;
+    for (const auto& s : filenames) {
+        if (!filename.empty())
+            filename += ",";
+        filename += std::string(s.mb_str());
+    }
+    BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << " start filename " << filename;
 
     const std::regex pattern_drop(".*[.](stp|step|stl|oltp|obj|amf|3mf|svg|zip|cxprj)", std::regex::icase);
     const std::regex pattern_gcode_drop(".*[.](gcode|g)", std::regex::icase);
@@ -13143,7 +13284,7 @@ bool Plater::load_files(const wxArrayString& filenames)
 }
 
 
-bool Plater::open_3mf_file(const fs::path &file_path)
+bool Plater::open_3mf_file(const fs::path &file_path,bool isModelAndConfig)
 {
     std::string filename = encode_path(file_path.filename().string().c_str());
     if (!(boost::algorithm::iends_with(filename, ".3mf") || boost::algorithm::iends_with(filename, ".cxprj"))) {
@@ -13151,7 +13292,8 @@ bool Plater::open_3mf_file(const fs::path &file_path)
     }
 
     LoadType load_type = LoadType::Unknown;
-    if (!model().objects.empty()) {
+    if ((!model().objects.empty()) || isModelAndConfig) 
+    {
         bool show_drop_project_dialog = true;
         if (show_drop_project_dialog) {
             ProjectDropDialog dlg(filename);
@@ -13212,9 +13354,18 @@ int Plater::get_3mf_file_count(std::vector<fs::path> paths)
 void Plater::add_file()
 {
     auto start = std::chrono::high_resolution_clock::now();
-    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << __LINE__ << " entry";
+    BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << __LINE__ << " entry";
     wxArrayString input_files;
     wxGetApp().import_model(this, input_files, true);
+
+    std::string filename;
+    for (const auto& s : input_files) {
+        if (!filename.empty())
+            filename += ",";
+        filename += std::string(s.mb_str());
+    }
+    BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << " input_files " << filename;
+
     if (input_files.empty()) return;
 
     std::vector<fs::path> paths;
@@ -13245,12 +13396,18 @@ void Plater::add_file()
     auto tmf_file   = std::vector<fs::path>{};
     auto other_file = std::vector<fs::path>{};
 
+    
+    bool isExistModel = model().objects.empty();
     switch (loadfiles_type)
     {
     case LoadFilesType::Single3MF:
-        open_3mf_file(paths[0]);
-    	break;
-
+    {
+        //string strPath = encode_path(paths[0].string().c_str());
+        string strPath = paths[0].string();
+        bool isModelAndConfig = isExistModel ? check_3mf_model_config(strPath) : false;
+        open_3mf_file(paths[0],isModelAndConfig);
+        break;
+    }
     case LoadFilesType::SingleOther: {
         Plater::TakeSnapshot snapshot(this, snapshot_label);
         if (!load_files(paths, LoadStrategy::LoadModel, false).empty()) {
@@ -13263,17 +13420,27 @@ void Plater::add_file()
         break;
     }
     case LoadFilesType::Multiple3MF:
-        first_file = std::vector<fs::path>{paths[0]};
-        for (auto i = 0; i < paths.size(); i++) {
-            if (i > 0) { other_file.push_back(paths[i]); }
+    {
+        first_file = std::vector<fs::path>{ paths[0] };
+        for (auto i = 0; i < paths.size(); i++)
+        {
+            if (i > 0)
+            {
+                other_file.push_back(paths[i]);
+            }
         };
 
-        if (open_3mf_file(first_file[0]))
+        string strPath = first_file[0].string();
+        bool isModelAndConfig = isExistModel ? check_3mf_model_config(strPath) : false;
+        if (open_3mf_file(first_file[0],isModelAndConfig))
         {
-            if (!load_files(other_file, LoadStrategy::LoadModel).empty()) { wxGetApp().mainframe->update_title(); }
+            if (!load_files(other_file, LoadStrategy::LoadModel).empty())
+            {
+                wxGetApp().mainframe->update_title();
+            }
         }
         break;
-
+    }
     case LoadFilesType::MultipleOther: {
         Plater::TakeSnapshot snapshot(this, snapshot_label);
         if (!load_files(paths, LoadStrategy::LoadModel, true).empty()) {
@@ -13285,21 +13452,32 @@ void Plater::add_file()
         break;
     }
     case LoadFilesType::Multiple3MFOther:
-        for (const auto &path : paths) {
-            if (wxString(encode_path(path.filename().string().c_str())).EndsWith("3mf")) {
+    {
+        for (const auto& path : paths)
+        {
+            if (wxString(encode_path(path.filename().string().c_str())).EndsWith("3mf"))
+            {
                 if (first_file.size() <= 0)
                     first_file.push_back(path);
                 else
                     tmf_file.push_back(path);
-            } else {
+            }
+            else
+            {
                 other_file.push_back(path);
             }
         }
 
-        open_3mf_file(first_file[0]);
+        string strPath = first_file[0].string();
+        bool isModelAndConfig = isExistModel ? check_3mf_model_config(strPath) : false;
+        open_3mf_file(first_file[0],isModelAndConfig);
         load_files(tmf_file, LoadStrategy::LoadModel);
-        if (!load_files(other_file, LoadStrategy::LoadModel, false).empty()) { wxGetApp().mainframe->update_title();}
+        if (!load_files(other_file, LoadStrategy::LoadModel, false).empty())
+        {
+            wxGetApp().mainframe->update_title();
+        }
         break;
+    }
     default:break;
     }
 
@@ -15130,6 +15308,87 @@ void Plater::eject_drive()
 	wxGetApp().removable_drive_manager()->eject_drive();
 }
 
+void Plater::check_object_need_repair(int obj_idx, const wxString& op_name)
+{
+    // fix_non_manifold_edges
+#ifdef HAS_WIN10SDK
+
+    if (obj_idx < 0)
+        return;
+
+    ModelObject* check_object = p->model.objects[obj_idx];
+    if (check_object == nullptr || check_object->volumes.size() != 1)
+        return;
+
+    if (is_windows10()) {
+        bool is_showed_dialog = false;
+        bool user_fix_model = false;
+
+        wxString notify_info;
+
+        for (size_t j = 0; j < check_object->volumes.size(); j++) {
+            //const TriangleMeshStats& stats = check_object->volumes[j]->mesh().stats();
+
+            //if (!stats.manifold()) {
+            if (its_num_open_edges(check_object->volumes[j]->mesh().its) > 0) {
+                if (!is_showed_dialog) {
+                    is_showed_dialog = true;
+
+                    if(op_name == wxEmptyString) {
+                        notify_info = _L("Non-manifold edges detected. Repair now?");
+                    }
+                    else {
+                        notify_info = _L("Non-manifold edges be caused by " + op_name + " tool, do you want to fix it now?");
+                    }
+                    
+                    MessageDialog dlg(nullptr, notify_info, "", wxYES | wxCANCEL);
+                    int           ret = dlg.ShowModal();
+                    if (ret == wxID_YES) {
+                        user_fix_model = true;
+                    }
+                }
+                if (!user_fix_model) {
+                    break;
+                }
+                // model_name
+                std::vector<std::string> succes_models;
+                // model_name     failing reason
+                std::vector<std::pair<std::string, std::string>> failed_models;
+                auto                                             plater = wxGetApp().plater();
+                auto fix_and_update_progress = [this, plater](ModelObject* model_object, const int vol_idx, const string& model_name, ProgressDialog& progress_dlg,
+                    std::vector<std::string>& succes_models, std::vector<std::pair<std::string, std::string>>& failed_models) {
+                        wxString msg = _L("Repairing model object");
+                        msg += ": " + from_u8(model_name) + "\n";
+                        std::string res;
+                        if (!fix_model_by_win10_sdk_gui(*model_object, vol_idx, progress_dlg, msg, res)) return false;
+                        return true;
+                    };
+
+                Plater::TakeSnapshot snapshot(plater, "Check repairing model object");
+
+                ProgressDialog progress_dlg(_L("Repairing model object"), "", 100, find_toplevel_parent(plater), wxPD_AUTO_HIDE | wxPD_APP_MODAL | wxPD_CAN_ABORT, true);
+
+                auto model_name = check_object->name;
+                if (!fix_and_update_progress(check_object, j, model_name, progress_dlg, succes_models, failed_models)) {
+                    BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << "run fix_and_update_progress error";
+                }
+                else {
+                    check_object->ensure_on_bed();
+                    plater->changed_mesh(obj_idx);
+
+                    plater->get_partplate_list().notify_instance_update(obj_idx, 0);
+                    plater->sidebar().obj_list()->update_plate_values_for_items();
+
+                    update();
+                }
+            };
+        }
+    }
+#endif
+
+
+}
+
 void Plater::take_snapshot(const std::string &snapshot_name) { p->take_snapshot(snapshot_name); }
 //void Plater::take_snapshot(const wxString &snapshot_name) { p->take_snapshot(snapshot_name); }
 void Plater::take_snapshot(const std::string &snapshot_name, UndoRedo::SnapshotType snapshot_type) { p->take_snapshot(snapshot_name, snapshot_type); }
@@ -16150,7 +16409,7 @@ void Plater::validate_current_plate(bool& model_fits, bool& validate_error)
     validate_error = false;
     if (p->printer_technology == ptFFF) {
         std::string plater_text = _u8L("An object is laid over the boundary of plate or exceeds the height limit.\n"
-                    "Please solve the problem by moving it totally on or off the plate, and confirming that the height is within the build volume.");;
+                    "Please solve the problem by moving it totally on or off the plate, and confirming that the height is within the build volume.");
         StringObjectException warning;
         Polygons polygons;
         std::vector<std::pair<Polygon, float>> height_polygons;

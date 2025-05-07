@@ -223,6 +223,7 @@ public:
 	void update_box_filament_sync_state(bool sync);
 	void reset_filament_sync_state();
     void resetFilamentToCFS();
+    void updateLastFilament(const std::vector<std::string>& presetName);
 	void on_sync_one_filament(int filament_index, const std::string& new_filament_color, const std::string& new_filament_name, const wxString& sync_label);
 	void backup_extruder_colors();
 	void restore_prev_extruder_colors();
@@ -267,6 +268,7 @@ public:
 	wxString get_filament_type_label();
 	wxString get_material_index_info();
 	std::string get_filament_name();
+    std::string getUserMaterial();
 
 protected:
     void OnPaint(wxPaintEvent& event);
@@ -282,6 +284,7 @@ private:
     int m_border_width = 1;
     bool m_sync = false;
     bool m_is_ext = false;
+    std::string m_userMaterial;
 };
 
 
@@ -297,6 +300,7 @@ public:
 	void set_filament_item_index(int index);
 	void init_by_device_data(const DM::Device& device_data);
 	void select_first_on_show();
+	void on_left_down(wxMouseEvent &evt);
 
 protected:
     void OnMouseEnter(wxMouseEvent& event);

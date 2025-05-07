@@ -995,7 +995,7 @@ void GLVolumeCollection::render(GLVolumeCollection::ERenderType type, bool disab
 
         GUI::PartPlate*      curr_plate = GUI::wxGetApp().plater()->get_partplate_list().get_selected_plate();
         bool                 is_multi_color;
-        const BoundingBoxf3& exclude_area = curr_plate->color_bed_exclude_area(&is_multi_color);
+        const BoundingBoxf3& exclude_area = curr_plate->get_color_bed_exclude_area_cache(&is_multi_color);
         shader->set_uniform("color_bed_exclude_area.enable", static_cast<int>(is_multi_color));
         if (is_multi_color) {
             std::array<float, 4> xy_data{(float)exclude_area.min.x(), (float)exclude_area.min.y(), (float)exclude_area.max.x(), (float)exclude_area.max.y()};
@@ -1108,7 +1108,7 @@ bool GLVolumeCollection::check_outside_state(const BuildVolume &build_volume, Mo
     
     //Creality
     bool is_multi_color;
-    const BoundingBoxf3& exclude_area = curr_plate->color_bed_exclude_area(&is_multi_color);
+    const BoundingBoxf3& exclude_area = curr_plate->get_color_bed_exclude_area_cache(&is_multi_color);
     
     for (GLVolume* volume : this->volumes) 
     {

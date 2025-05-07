@@ -15,6 +15,17 @@ sed -i -e 's#/usr#././#g' bin/@SLIC3R_APP_CMD@
 mv @SLIC3R_APP_CMD@ AppRun
 chmod +x AppRun
 
+
+
+mkdir -p usr/lib
+cp /lib/x86_64-linux-gnu/libusrsctp.so.1 usr/lib/
+cp /lib/x86_64-linux-gnu/libsrtp2.so.1 usr/lib/
+cp /lib/x86_64-linux-gnu/libasound.so.2 usr/lib/
+cp /lib/x86_64-linux-gnu/libopus.so.0 usr/lib/
+cp /lib/x86_64-linux-gnu/libspeexdsp.so.1 usr/lib/
+cp /lib/x86_64-linux-gnu/liblzma.so.5 usr/lib/
+cp /lib/x86_64-linux-gnu/libx264.so.155 usr/lib/
+
 cp resources/images/@SLIC3R_APP_NAME@_192px.png @SLIC3R_APP_NAME@.png
 mkdir -p usr/share/icons/hicolor/192x192/apps
 cp resources/images/@SLIC3R_APP_NAME@_192px.png usr/share/icons/hicolor/192x192/apps/@SLIC3R_APP_NAME@.png

@@ -843,6 +843,17 @@ const GLVolume* Selection::get_volume(unsigned int volume_idx) const
     return (m_valid && (volume_idx < (unsigned int)m_volumes->size())) ? (*m_volumes)[volume_idx] : nullptr;
 }
 
+const GLVolume* Selection::get_volume(unsigned int model_id, unsigned int volume_id, unsigned int instance_id) const
+{
+    GLVolume::CompositeID cid = GLVolume::CompositeID(model_id, volume_id, instance_id);
+    for (GLVolume* v : *m_volumes)
+    {
+        if (v->composite_id == cid)
+            return v;
+    }
+    return NULL;
+}
+
 GLVolume* Selection::get_volume(unsigned int volume_idx)
 {
     return (m_valid && (volume_idx < (unsigned int)m_volumes->size())) ? (*m_volumes)[volume_idx] : nullptr;

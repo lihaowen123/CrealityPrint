@@ -312,7 +312,8 @@ void NotificationManager::PopNotification::count_spaces()
 	m_window_width_offset = m_left_indentation + m_line_height * 3.f;
 
     if (m_data.level != NotificationLevel::ErrorNotificationLevel
-        && m_data.level != NotificationLevel::SeriousWarningNotificationLevel) {
+        && m_data.level != NotificationLevel::SeriousWarningNotificationLevel
+		&& m_data.level != NotificationLevel::NormalNotificationLevel) {
 		m_line_height += 5;
     }
 
@@ -441,7 +442,7 @@ void NotificationManager::PopNotification::init()
 void NotificationManager::PopNotification::set_next_window_size(ImGuiWrapper& imgui)
 {
 	m_window_height = m_multiline ?
-		std::max(m_lines_count, (size_t)2) * m_line_height :
+		std::max(m_lines_count + 1, (size_t)2) * m_line_height :
 		2 * m_line_height;
 	m_window_height += 1 * m_line_height; // top and bottom
 }
@@ -481,9 +482,15 @@ void NotificationManager::PopNotification::bbl_render_block_notif_text(ImGuiWrap
 				push_style_color(ImGuiCol_Text, errc, m_state == EState::FadingOut, m_current_fade_opacity);
 				imgui.text(line.c_str());
 				ImGui::PopStyleColor();
-			}
-			else {
-				imgui.text(line.c_str());
+			} else {
+                if (get_data().level == Slic3r::GUI::NotificationManager::NotificationLevel::NormalNotificationLevel) {
+                    auto errc = DispConfig().getColor(DispConfig::e_ct_text);
+                    push_style_color(ImGuiCol_Text, errc, m_state == EState::FadingOut, m_current_fade_opacity);
+                    imgui.text(line.c_str());
+                    ImGui::PopStyleColor();
+                } else {
+                    imgui.text(line.c_str());
+                }
 			}
 		}
 	}
@@ -670,7 +677,7 @@ void NotificationManager::PopNotification::bbl_render_block_notif_buttons(ImGuiW
 	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(.0f, .0f, .0f, .0f));
 	ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(.0f, .0f, .0f, .0f));
 	ImGui::PushStyleColor(ImGuiCol_Text, DispConfig().getColor(DispConfig::e_ct_text));
-
+    /*
 	std::wstring button_text;
 	button_text = ImGui::CloseBlockNotifButton;
 	ImVec2 button_pic_size = ImGui::CalcTextSize(into_u8(button_text).c_str());
@@ -681,6 +688,21 @@ void NotificationManager::PopNotification::bbl_render_block_notif_buttons(ImGuiW
 		button_text = ImGui::CloseBlockNotifHoverButton;
 	if (imgui.button(button_text.c_str(), button_size.x, button_size.y))
 		close();
+	*/
+
+    float  scale           = wxGetApp().plater()->get_current_canvas3D()->get_scale();
+    ImVec2 button_pic_size = ImVec2(30 * scale, 30 * scale);
+    ImVec2 button_size     = button_pic_size;
+    ImVec2 cursor_pos = {win_size.x - button_size.x * 1.5f, win_size.y / 2 - button_size.y / 2};
+    ImGui::SetCursorPos(cursor_pos);
+    auto normtx      = DispConfig().getTextureId(DispConfig::e_tt_block_notification_close, false, false);
+    auto normHovertx = DispConfig().getTextureId(DispConfig::e_tt_block_notification_close_hover, false, false);
+	if (m_data.level == NotificationLevel::NormalNotificationLevel) {
+        normtx      = DispConfig().getTextureId(DispConfig::e_tt_normal_tip_block_notification_close, false, false);
+        normHovertx = DispConfig().getTextureId(DispConfig::e_tt_normal_tip_block_notification_close_hover, false, false);
+	}
+    if (ImGui::ImageButton3(normtx, normHovertx, ImVec2(30 * scale, 30 * scale)))
+        close();
 
 	ImGui::PopStyleColor(4);
 }
@@ -705,7 +727,9 @@ void NotificationManager::PopNotification::bbl_render_block_notif_left_sign(
         pos.x -= 5;
         pos.y += 5;
         ImGui::SetCursorPos(pos);
+        ImGui::PushStyleColor(ImGuiCol_Text, DispConfig().getColor(DispConfig::e_ct_normalTip));
         imgui.text(_u8L("Tips:"));
+        ImGui::PopStyleColor(1);
     } else {
         ImGui::Image(img, {1.6f * m_line_height, 1.6f * m_line_height});
         //ImGui::PushStyleColor(ImGuiCol_Text, DispConfig().getColor(DispConfig::e_ct_errorText));

@@ -92,8 +92,9 @@ void ModelDownloader::start_download_model_group(const std::string& full_url,
                         cache_progress = progress;
                         if (progress == 100) {
                             file["path"]    = file_path;
+                            save_cache_to_storage();
                         }
-                        save_cache_to_storage();
+                        
                         return;
                     }
                 }
@@ -329,10 +330,25 @@ void ModelDownloader::load_cache_from_storage() {
     dest_folder_.append(user_id_);
 
     cache_file_ = dest_folder_;
+    cache_file_ =  dest_folder_ / "cloud_download_data.json";
+    cache_file_bak_ = dest_folder_ / "cloud_download_data.json.bak"; 
     boost::filesystem::path cache_id_file_ = dest_folder_;
-    if (fs::exists(cache_file_.append("cloud_download_data.json"))) {
-        boost::nowide::ifstream ifs(cache_file_.string());
-        ifs >> cache_json_;
+    try{
+        if (fs::exists(cache_file_)) {
+            boost::nowide::ifstream ifs(cache_file_.string());
+            ifs >> cache_json_;
+        }
+    }
+    catch (...) {
+        if (fs::exists(cache_file_bak_))
+        {
+            fs::remove(cache_file_);
+            fs::rename(cache_file_bak_, cache_file_);
+
+        }else{
+            fs::remove(cache_file_);
+        }
+        
     }
     cache_id_file_.append("3mfs");
     if (!fs::exists(cache_id_file_)) {
@@ -350,6 +366,10 @@ void ModelDownloader::load_cache_from_storage() {
 void ModelDownloader::save_cache_to_storage()
 {
     boost::nowide::ofstream c;
+    if (fs::exists(cache_file_)) {
+        fs::remove(cache_file_bak_);
+        fs::rename(cache_file_, cache_file_bak_);
+    }
     c.open(cache_file_.string(), std::ios::out | std::ios::trunc);
     c << std::setw(4) << cache_json_ << std::endl;
     c.close();

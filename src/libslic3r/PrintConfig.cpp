@@ -4728,6 +4728,24 @@ void PrintConfigDef::init_fff_params()
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloat(0.5));
 
+    def = this->add("support_interface_min_area", coFloat);
+    def->gui_type = ConfigOptionDef::GUIType::f_enum_open;
+    def->label    = L("Minimum Support Contact Area");
+    def->category = L("Support");
+    def->tooltip  = L("Lower values generate more support contact surfaces.");
+    def->sidetext = L("mm²");
+    def->min      = 0;
+    def->enum_values.push_back("0");
+    def->enum_values.push_back("0.25");
+    def->enum_values.push_back("0.64");
+    def->enum_values.push_back("1");
+    def->enum_labels.push_back("0");
+    def->enum_labels.push_back("0.25");
+    def->enum_labels.push_back("0.64");
+    def->enum_labels.push_back("1");
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat(0.25));
+
     //BBS
     def = this->add("support_bottom_interface_spacing", coFloat);
     def->label = L("Bottom interface spacing");
@@ -4750,58 +4768,59 @@ void PrintConfigDef::init_fff_params()
     def = this->add("support_base_pattern", coEnum);
     def->label = L("Base pattern(Normal)");
     def->category = L("Support");
-    def->tooltip = L("Line pattern of support");
+    def->tooltip = L("Setting for the main pattern of normal support");
     def->enum_keys_map = &ConfigOptionEnum<SupportMaterialPattern>::get_enum_values();
     def->enum_values.push_back("default");
     def->enum_values.push_back("rectilinear");
     def->enum_values.push_back("rectilinear-grid");
     def->enum_values.push_back("honeycomb");
-    def->enum_values.push_back("lightning");
+    //def->enum_values.push_back("lightning");
     def->enum_values.push_back("hollow");
-    def->enum_values.push_back("cross");
-    def->enum_values.push_back("gyroid");
-    def->enum_values.push_back("triangles");
-    def->enum_values.push_back("zigzag");
+    //def->enum_values.push_back("cross");
+    //def->enum_values.push_back("gyroid");
+    //def->enum_values.push_back("triangles");
+    //def->enum_values.push_back("zigzag");
 
     def->enum_labels.push_back(L("Default"));
     def->enum_labels.push_back(L("Rectilinear"));
     def->enum_labels.push_back(L("Rectilinear grid"));
     def->enum_labels.push_back(L("Honeycomb"));
-    def->enum_labels.push_back(L("Lightning"));
+    //def->enum_labels.push_back(L("Lightning"));
     def->enum_labels.push_back(L("Hollow"));
-    def->enum_labels.push_back(L("Cross"));
-    def->enum_labels.push_back(L("Gyroid"));
-    def->enum_labels.push_back(L("Triangles"));
-    def->enum_labels.push_back(L("Zig Zag"));
+    //def->enum_labels.push_back(L("Cross"));
+    //def->enum_labels.push_back(L("Gyroid"));
+    //def->enum_labels.push_back(L("Triangles"));
+    //def->enum_labels.push_back(L("Zig Zag"));
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionEnum<SupportMaterialPattern>(smpDefault));
 
     def = this->add("support_base_pattern_tree", coEnum);
     def->label         = L("Base pattern(Tree)");
     def->category      = L("Support");
-    def->tooltip       = L("Line pattern of support");
+    def->tooltip = L("Setting for the main pattern of tree support; "
+                    "organic tree support style only supports the ‘hollow’ fill pattern.");
     def->enum_keys_map = &ConfigOptionEnum<SupportMaterialPattern>::get_enum_values();
     def->enum_values.push_back("default");
     def->enum_values.push_back("rectilinear");
     def->enum_values.push_back("rectilinear-grid");
     def->enum_values.push_back("honeycomb");
-    def->enum_values.push_back("lightning");
+    //def->enum_values.push_back("lightning");
     def->enum_values.push_back("hollow");
-    def->enum_values.push_back("cross");
-    def->enum_values.push_back("gyroid");
-    def->enum_values.push_back("triangles");
-    def->enum_values.push_back("zigzag");
+    //def->enum_values.push_back("cross");
+    //def->enum_values.push_back("gyroid");
+    //def->enum_values.push_back("triangles");
+    //def->enum_values.push_back("zigzag");
 
     def->enum_labels.push_back(L("Default"));
     def->enum_labels.push_back(L("Rectilinear"));
     def->enum_labels.push_back(L("Rectilinear grid"));
     def->enum_labels.push_back(L("Honeycomb"));
-    def->enum_labels.push_back(L("Lightning"));
+    //def->enum_labels.push_back(L("Lightning"));
     def->enum_labels.push_back(L("Hollow"));
-    def->enum_labels.push_back(L("Cross"));
-    def->enum_labels.push_back(L("Gyroid"));
-    def->enum_labels.push_back(L("Triangles"));
-    def->enum_labels.push_back(L("Zig Zag"));
+    //def->enum_labels.push_back(L("Cross"));
+    //def->enum_labels.push_back(L("Gyroid"));
+    //def->enum_labels.push_back(L("Triangles"));
+    //def->enum_labels.push_back(L("Zig Zag"));
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionEnum<SupportMaterialPattern>(smpDefault));
 
@@ -5061,7 +5080,8 @@ void PrintConfigDef::init_fff_params()
     def = this->add("tree_support_wall_count", coInt);
     def->label = L("Support wall loops(Normal)");
     def->category = L("Support");
-    def->tooltip = L("This setting specify the count of walls around support");
+    def->tooltip = L("Setting for the number of outer wall layers for normal support; "
+                    "0 means an intelligent number of layers");
     def->min = 0;
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionInt(0));
@@ -5069,7 +5089,8 @@ void PrintConfigDef::init_fff_params()
     def = this->add("tree_support_wall_count_tree", coInt);
     def->label    = L("Support wall loops(Tree)");
     def->category = L("Support");
-    def->tooltip  = L("This setting specify the count of walls around support");
+    def->tooltip  = L("Setting for the number of outer wall layers for tree support; "
+                    "0 means an intelligent number of layers.");
     def->min      = 0;
     def->mode     = comAdvanced;
     def->set_default_value(new ConfigOptionInt(0));

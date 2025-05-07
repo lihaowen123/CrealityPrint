@@ -24,6 +24,12 @@ REQUIRED_DEV_PACKAGES=(
     ninja-build
     texinfo
     wget
+    libx264-dev
+    libusrsctp-dev
+    libsrtp2-dev
+    libasound2-dev
+    libopus-dev
+    libspeexdsp-dev
 )
 
 if [[ -n "$UPDATE_LIB" ]]

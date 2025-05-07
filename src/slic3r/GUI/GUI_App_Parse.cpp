@@ -3,6 +3,7 @@
 #include "Tab.hpp"
 
 #include "slic3r/Utils/ExportMetas.hpp"
+#include "libslic3r/AutomationMgr.hpp"
 #include <boost/algorithm/string.hpp>
 #include <string>
 
@@ -68,6 +69,25 @@ namespace GUI {
                 TabPrinter *tab_printer = dynamic_cast<TabPrinter*>(tabs_list.at(2));
                 app_export_meta(tab_print, tab_filament, tab_printer, version);
             }
+        }
+        if (init_params && init_params->argc > 2)
+        {
+#if AUTOMATION_TOOL
+            std::string _arg1 = init_params->argv[1];
+            if (boost::algorithm::starts_with(_arg1, "automation"))
+			{
+                if(init_params->argc <2 )
+					return;
+                //�������ԣ�ֱ���˳�
+                AutomationMgr::set3mfPath(init_params->argv[2]); //
+                AutomationMgr::setFuncType(1); //GCode  
+                // ���������
+                if (boost::algorithm::contains(init_params->argv[2], "scale")) {
+                    AutomationMgr::set3mfPath(init_params->argv[3]); //
+                    AutomationMgr::setFuncType(2);    // GCode  
+                }
+			}
+#endif            
         }
     }
 }

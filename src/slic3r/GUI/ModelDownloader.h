@@ -71,6 +71,7 @@ private:
     boost::filesystem::path                  dest_folder_;
     boost::filesystem::path                  cache_3mf_folder_;
     boost::filesystem::path                  cache_file_;
+    boost::filesystem::path                  cache_file_bak_;
     nlohmann::json                           cache_json_;
     std::mutex                               cache_json_mutex_;
 };

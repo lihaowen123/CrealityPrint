@@ -33,7 +33,9 @@
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
-
+#if defined(__linux__) || defined(__LINUX__)
+#include "video/WebRTCDecoder.h"
+#endif
 
 namespace pt = boost::property_tree;
 
@@ -74,16 +76,17 @@ PrinterMgrView::PrinterMgrView(wxWindow *parent)
         this->handle_request_update_device_relate_to_account(json_data);
     });
     std::string version = std::string(CREALITYPRINT_VERSION);
+    std::string os = wxGetOsDescription().ToStdString();
     int port = wxGetApp().get_server_port();
 //#define _DEBUG1
 #ifdef _DEBUG1
-        wxString url = wxString::Format("http://localhost:5173/?version=%s&port=%d", version, port);
+        wxString url = wxString::Format("http://localhost:5173/?version=%s&port=%d&os=%s", version, port,os);
         this->load_url(url, wxString());
          m_browser->EnableAccessToDevTools();
      #else
         //wxString url = wxString::Format("http://localhost:%d/deviceMgr/index.html", wxGetApp().get_server_port());
         
-        wxString url = wxString::Format("%s/web/deviceMgr/index.html?version=%s&port=%d", from_u8(resources_dir()), version,port);
+        wxString url = wxString::Format("%s/web/deviceMgr/index.html?version=%s&port=%d&os=%s", from_u8(resources_dir()), version,port,os);
         url.Replace(wxT("\\"), wxT("/"));
         url.Replace(wxT("#"), wxT("%23"));
         wxURI uri(url);
@@ -91,7 +94,7 @@ PrinterMgrView::PrinterMgrView(wxWindow *parent)
         encodedUrl = wxT("file://")+encodedUrl;
         this->load_url(encodedUrl, wxString());
 
-        // this->load_url(wxString("http://localhost:5173/"), wxString());
+        //this->load_url(wxString("http://localhost:5173/"), wxString());
         m_browser->EnableAccessToDevTools();
 
      #endif
@@ -268,6 +271,27 @@ void PrinterMgrView::OnScriptMessage(wxWebViewEvent& evt)
                     }
                 );
             }
+        }else if(strCmd == "down_files")
+        {
+            
+            json urls = j["urls"];
+            std::string path_type = j["file_type"];
+            
+            wxDirDialog dlg(this, _L("Please Select"), "", wxDD_DEFAULT_STYLE | wxDD_DIR_MUST_EXIST);
+            
+            if (dlg.ShowModal() != wxID_OK) {
+                return;
+            }
+            wxString path = dlg.GetPath();
+            std::vector<std::string> download_infos;
+            for (auto iter = urls.begin(); iter != urls.end(); iter++)
+            {
+                std::string url = iter->get<std::string>();
+                download_infos.push_back(url);
+            }
+            this->down_files(download_infos, path.ToStdString(), path_type);
+            
+
         }
         else if(strCmd == "down_file")
         {
@@ -341,6 +365,13 @@ void PrinterMgrView::OnScriptMessage(wxWebViewEvent& evt)
         else if(strCmd == "get_machine_list")
         {
             load_machine_preset_data();
+        }else if(strCmd == "switch_webrtc_source")
+        {
+            std::string ip = j["ip"];
+            std::string video_url = (boost::format("http://%1%:8000/call/webrtc_local") % ip).str();
+#if defined(__linux__) || defined(__LINUX__)
+            WebRTCDecoder::GetInstance()->startPlay(video_url); 
+#endif
         }
         else {
             BOOST_LOG_TRIVIAL(trace) << "PrinterMgrView::OnScriptMessage;Unknown Command:" << strCmd;
@@ -488,7 +519,85 @@ void PrinterMgrView::run_script(std::string content)
 {
     WebView::RunScript(m_browser, content);
 }
+std::string getFileNameFromURL(const std::string& url) {
+    // 使用std::istringstream来分割URL
+    std::istringstream iss(url);
+    std::string segment;
+    std::string fileName;
+ 
+    // 查找最后一个'/'字符的位置
+    size_t lastIndex = url.find_last_of("/\\");
+    if (lastIndex != std::string::npos) {
+        fileName = url.substr(lastIndex + 1); // 从最后一个'/'或'\\'之后开始获取文件名
+    } else {
+        // 如果URL中没有'/'，则整个URL可能是文件名
+        fileName = url;
+    }
+ 
+    return fileName;
+}
+std::string filterInvalidFileNameChars(const std::string& input) {
+    std::string result = input;
+    for (char& c : result) {
+        if (c == '\\' || c == '/' || c == ':' || c == '*' || c == '?' || c == '"' || c == '<' || c == '>' || c == '|') {
+            c = '-';
+        }
+    }
+    return result;
+}
+void PrinterMgrView::down_files(std::vector<std::string> download_infos, std::string savePath, std::string path_type )
+{        
+        boost::thread import_thread = Slic3r::create_thread([savePath, download_infos, this] {
+            for(auto& download_info : download_infos)
+            {
+                boost::filesystem::path  target_path = savePath; 
+                target_path = target_path / filterInvalidFileNameChars(getFileNameFromURL(Http::url_decode(download_info)));   
+                wxString download_url(download_info.c_str());
+                fs::path tmp_path = target_path;
+                tmp_path += wxSecretString::Format("%s",".download");
 
+                auto filesize = 0;
+                bool size_limit = false;
+                auto http = Http::get(download_url.ToStdString());
+
+                http.on_progress([filesize, size_limit, this](Http::Progress progress, bool& cancel) {
+                        if (progress.dltotal != 0) {
+                            int percent = progress.dlnow * 100 / progress.dltotal;
+
+                            nlohmann::json commandJson;
+                            commandJson["command"] = "update_download_progress";
+                            commandJson["data"]    = percent;
+
+                            wxString strJS = wxString::Format("window.handleStudioCmd('%s');", RemotePrint::Utils::url_encode(commandJson.dump()));
+                            wxGetApp().CallAfter([this, strJS] { run_script(strJS.ToStdString()); });
+                        }
+                    })
+                    .on_error([this](std::string body, std::string error, unsigned http_status) {
+                        (void) body;
+                        BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << boost::format("Error getting: HTTP %1%, %2%")%http_status%error;
+                        nlohmann::json commandJson;
+                        commandJson["command"] = "update_download_progress";
+                    
+                        commandJson["data"]    = -2;
+
+                        wxString strJS = wxString::Format("window.handleStudioCmd('%s');", RemotePrint::Utils::url_encode(commandJson.dump()));
+                        wxGetApp().CallAfter([this, strJS] { run_script(strJS.ToStdString()); });
+                        return;
+                    }).on_complete([tmp_path, target_path](std::string body, unsigned http_status) {
+                        if(http_status!=200){
+                            return ;
+                        }
+                        fs::fstream file(tmp_path, std::ios::out | std::ios::binary | std::ios::trunc);
+                        file.write(body.c_str(), body.size());
+                        file.close();
+
+                        fs::rename(tmp_path, target_path);
+                    })
+                    .perform_sync();
+            }
+        });
+    
+}
 void PrinterMgrView::down_file(std::string download_info, std::string filename, std::string path_type )
 {
     FileType file_type = FT_GCODE;
@@ -597,8 +706,8 @@ void PrinterMgrView::scan_device()
         });
  
 
-    if (_thread.joinable())
-        _thread.join();
+   /* if (_thread.joinable())
+        _thread.join();*/
 }
 
 void     PrinterMgrView::RequestDeviceListFromDB() 
@@ -756,6 +865,28 @@ bool PrinterMgrView::LoadFile(std::string jPath, std::string &sContent)
     }
 
     return true;
+}
+
+void PrinterMgrView::request_close_detail_page()
+{
+    nlohmann::json commandJson;
+    commandJson["command"] = "req_close_detail_page_video";
+    commandJson["data"] = "";
+
+    wxString strJS = wxString::Format("window.handleStudioCmd('%s');", commandJson.dump());
+
+    run_script(strJS.ToStdString());
+}
+
+void PrinterMgrView::request_reopen_detail_video()
+{
+    nlohmann::json commandJson;
+    commandJson["command"] = "req_reopen_detail_page_video";
+    commandJson["data"] = "";
+
+    wxString strJS = wxString::Format("window.handleStudioCmd('%s');", commandJson.dump());
+
+    run_script(strJS.ToStdString());
 }
 
 int PrinterMgrView::load_machine_preset_data()

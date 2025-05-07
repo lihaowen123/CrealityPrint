@@ -558,9 +558,11 @@ void GizmoObjectManipulation::do_render_move_window(ImGuiWrapper *imgui_wrapper,
         }
     }
 #if BBS_TOOLBAR_ON_TOP
-    imgui_wrapper->set_next_window_pos(x, y, ImGuiCond_Always, 0.f, 0.0f);
+    // imgui_wrapper->set_next_window_pos(x, y, ImGuiCond_Always, 0.f, 0.0f);
+    imgui_wrapper->set_draggable_window_pos(x, y, ImGuiCond_Always, 0.f, 0.0f);
 #else
-    imgui_wrapper->set_next_window_pos(x, y, ImGuiCond_Always, 1.0f, 0.0f);
+    // imgui_wrapper->set_next_window_pos(x, y, ImGuiCond_Always, 1.0f, 0.0f);
+    imgui_wrapper->set_draggable_window_pos(x, y, ImGuiCond_Always, 1.0f, 0.0f);
 #endif
 
     // BBS
@@ -571,7 +573,7 @@ void GizmoObjectManipulation::do_render_move_window(ImGuiWrapper *imgui_wrapper,
                         ImVec2(8.0f, (30.0f * m_glcanvas.get_scale() - ImGui::GetFontSize()) / 2.0)); // use for titlebar
     std::string name = window_name + "##" + this->m_new_title_string;
     //std::string name = "move test";
-    imgui_wrapper->begin(_L(name), ImGuiWrapper::TOOLBAR_WINDOW_FLAGS);
+    imgui_wrapper->begin_with_drag(_L(name), ImGuiWrapper::TOOLBAR_WINDOW_FLAGS);
     ImGui::PopStyleVar(1);
 
     auto update = [this](unsigned int active_id, std::string opt_key, Vec3d original_value, Vec3d new_value) -> int {
@@ -680,6 +682,55 @@ void GizmoObjectManipulation::do_render_move_window(ImGuiWrapper *imgui_wrapper,
 
     m_last_active_item = current_active_id;
     last_move_input_window_width = ImGui::GetWindowWidth();
+
+    ImGui::Dummy(ImVec2(0.0f, 0.0f));
+
+    ImVec4 bt_bgc = ImVec4(110 / 255.0, 110 / 255.0, 115 / 255.0, 1.0);
+    ImVec4 bt_bgc_light = ImVec4(255 / 255.0, 255 / 255.0, 255 / 255.0, 1.0);
+    bool is_dark = wxGetApp().dark_mode();
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGuiWrapper::COL_CREALITY);
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImGuiWrapper::COL_CREALITY);
+    ImGui::PushStyleColor(ImGuiCol_Button, is_dark ? bt_bgc : bt_bgc_light);
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(25, 5));
+    const float h = ImGui::GetFrameHeight();
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, h * 0.5f);
+
+    // calculate button position
+    ImVec2 title_size = ImGui::CalcTextSize(_u8L("Center").c_str());
+    const float btn_width = title_size.x + ImGui::GetStyle().FramePadding.x * 2;
+    const float start_x = (ImGui::GetWindowWidth() - btn_width) / 2;
+    ImGui::SetCursorPosX(start_x);
+
+    // judge whether this button disabled
+    bool disable_center_button = true;
+    if (wxGetApp().plater()->canvas3D()->get_canvas_type() == GLCanvas3D::ECanvasType::CanvasView3D) {
+        PartPlate* plate = wxGetApp().plater()->get_partplate_list().get_selected_plate();
+        if (plate) {
+            Vec3d model_pos = selection.get_bounding_box().center();
+            Vec3d center_pos = plate->get_center_origin();
+            disable_center_button = (model_pos.x() == center_pos.x()) && (model_pos.y() == center_pos.y());
+        }
+    }
+
+    // adjust style 
+    if (disable_center_button) {
+        ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+        ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+    }
+
+    // draw button
+    if (ImGui::Button(_u8L("Center").c_str(), ImVec2(btn_width, h))) {
+        wxGetApp().plater()->center_selection();
+    }
+
+    // recover style
+    if (disable_center_button) {
+        ImGui::PopStyleVar();
+        ImGui::PopItemFlag();
+    }
+    ImGui::PopStyleVar(2);
+    ImGui::PopStyleColor(3);
+
     imgui_wrapper->end();
 
     ImGui::PopStyleVar(1);
@@ -698,9 +749,11 @@ void GizmoObjectManipulation::do_render_rotate_window(ImGuiWrapper *imgui_wrappe
         }
     }
 #if BBS_TOOLBAR_ON_TOP
-    imgui_wrapper->set_next_window_pos(x, y, ImGuiCond_Always, 0.f, 0.0f);
+    // imgui_wrapper->set_next_window_pos(x, y, ImGuiCond_Always, 0.f, 0.0f);
+    imgui_wrapper->set_draggable_window_pos(x, y, ImGuiCond_Always, 0.f, 0.0f);
 #else
-    imgui_wrapper->set_next_window_pos(x, y, ImGuiCond_Always, 1.0f, 0.0f);
+    // imgui_wrapper->set_next_window_pos(x, y, ImGuiCond_Always, 1.0f, 0.0f);
+    imgui_wrapper->set_draggable_window_pos(x, y, ImGuiCond_Always, 1.0f, 0.0f);
 #endif
 
     // BBS
@@ -711,7 +764,7 @@ void GizmoObjectManipulation::do_render_rotate_window(ImGuiWrapper *imgui_wrappe
                         ImVec2(8.0f, (30.0f * m_glcanvas.get_scale() - ImGui::GetFontSize()) / 2.0)); // use for titlebar
     std::string name = window_name + "##" + this->m_new_title_string;
     //std::string name = "move test";
-    imgui_wrapper->begin(_L(name), ImGuiWrapper::TOOLBAR_WINDOW_FLAGS);
+    imgui_wrapper->begin_with_drag(_L(name), ImGuiWrapper::TOOLBAR_WINDOW_FLAGS);
     ImGui::PopStyleVar(1);
     
     auto update = [this](unsigned int active_id, std::string opt_key, Vec3d original_value, Vec3d new_value) -> int {
@@ -832,9 +885,11 @@ void GizmoObjectManipulation::do_render_scale_input_window(ImGuiWrapper* imgui_w
         }
     }
 #if BBS_TOOLBAR_ON_TOP
-    imgui_wrapper->set_next_window_pos(x, y, ImGuiCond_Always, 0.f, 0.0f);
+    // imgui_wrapper->set_next_window_pos(x, y, ImGuiCond_Always, 0.f, 0.0f);
+    imgui_wrapper->set_draggable_window_pos(x, y, ImGuiCond_Always, 0.f, 0.0f);
 #else
-    imgui_wrapper->set_next_window_pos(x, y, ImGuiCond_Always, 1.0f, 0.0f);
+    // imgui_wrapper->set_next_window_pos(x, y, ImGuiCond_Always, 1.0f, 0.0f);
+    imgui_wrapper->set_draggable_window_pos(x, y, ImGuiCond_Always, 1.0f, 0.0f);
 #endif
 
     //BBS
@@ -844,7 +899,7 @@ void GizmoObjectManipulation::do_render_scale_input_window(ImGuiWrapper* imgui_w
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding,
                         ImVec2(8.0f, (30.0f * m_glcanvas.get_scale() - ImGui::GetFontSize()) / 2.0)); // use for titlebar
     std::string name = window_name + "##" + this->m_new_title_string;
-    imgui_wrapper->begin(_L(name), ImGuiWrapper::TOOLBAR_WINDOW_FLAGS);
+    imgui_wrapper->begin_with_drag(_L(name), ImGuiWrapper::TOOLBAR_WINDOW_FLAGS);
     ImGui::PopStyleVar(1);
 
     auto update = [this](unsigned int active_id, std::string opt_key, Vec3d original_value, Vec3d new_value)->int {

@@ -1817,10 +1817,11 @@ void IMSlider::UseDefaultColors(bool def_colors_on)
 void IMSlider::on_mouse_wheel(wxMouseEvent& evt) {
     auto moves_slider_window = ImGui::FindWindowByName("moves_slider");
     auto layers_slider_window = ImGui::FindWindowByName("laysers_slider");
-    float wheel = evt.GetWheelRotation() > 0 ? 1.0f : -1.0f;
-    if (wheel == 0.0f)
+    if (evt.GetWheelRotation() == 0)
         return;
-
+    
+    float wheel = evt.GetWheelRotation() > 0 ? 1.0f : -1.0f;
+    
 #ifdef __WXOSX__
     if (wxGetKeyState(WXK_SHIFT)) {
         wheel *= -5;

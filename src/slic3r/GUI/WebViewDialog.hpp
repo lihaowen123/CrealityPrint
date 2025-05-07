@@ -109,6 +109,8 @@ public:
     void sync_preferences(const std::vector<wxString>& prefs);
     void update_device_page(const std::string& device_info);
 	void update_all_device(const std::string& device);
+    void Reload();
+    wxString GetURL();
 	wxWebView* Browse(){ return m_browser;};
 private:
 

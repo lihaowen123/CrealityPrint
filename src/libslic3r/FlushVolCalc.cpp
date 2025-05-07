@@ -2,6 +2,7 @@
 #include <cmath>
 #include <assert.h>
 #include "slic3r/Utils/ColorSpaceConvert.hpp"
+#include "libslic3r/Color.hpp"
 
 namespace Slic3r {
 
@@ -93,4 +94,167 @@ int FlushVolCalculator::calc_flush_vol(unsigned char src_a, unsigned char src_r,
     return std::min((int)flush_volume, m_max_flush_vol);
 }
 
+std::vector<int> get_min_flush_volumes(const DynamicPrintConfig& full_config)
+{
+    std::vector<int>extra_flush_volumes;
+    //const auto& full_config = wxGetApp().preset_bundle->full_config();
+    //auto& printer_config = wxGetApp().preset_bundle->printers.get_edited_preset().config;
+
+    const ConfigOption* nozzle_volume_opt = full_config.option("nozzle_volume");
+    int nozzle_volume_val = nozzle_volume_opt ? (int)nozzle_volume_opt->getFloat() : 0;
+
+    const ConfigOptionInt* enable_long_retraction_when_cut_opt = full_config.option<ConfigOptionInt>("enable_long_retraction_when_cut");
+    int machine_enabled_level = 0;
+    if (enable_long_retraction_when_cut_opt) {
+        machine_enabled_level = enable_long_retraction_when_cut_opt->value;
+        BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": get enable_long_retraction_when_cut from config, value=%1%")%machine_enabled_level;
+    }
+    const ConfigOptionBools* long_retractions_when_cut_opt = full_config.option<ConfigOptionBools>("long_retractions_when_cut");
+    bool machine_activated = false;
+    if (long_retractions_when_cut_opt) {
+        machine_activated = long_retractions_when_cut_opt->values[0] == 1;
+        BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": get long_retractions_when_cut from config, value=%1%, activated=%2%")%long_retractions_when_cut_opt->values[0] %machine_activated;
+    }
+
+    size_t filament_size = full_config.option<ConfigOptionFloats>("filament_diameter")->values.size();
+    std::vector<double> filament_retraction_distance_when_cut(filament_size, 18.0f), printer_retraction_distance_when_cut(filament_size, 18.0f);
+    std::vector<unsigned char> filament_long_retractions_when_cut(filament_size, 0);
+    const ConfigOptionFloats* filament_retraction_distances_when_cut_opt = full_config.option<ConfigOptionFloats>("filament_retraction_distances_when_cut");
+    if (filament_retraction_distances_when_cut_opt) {
+        filament_retraction_distance_when_cut = filament_retraction_distances_when_cut_opt->values;
+        BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": get filament_retraction_distance_when_cut from config, size=%1%, values=%2%")%filament_retraction_distance_when_cut.size() %filament_retraction_distances_when_cut_opt->serialize();
+    }
+
+    const ConfigOptionFloats* printer_retraction_distance_when_cut_opt = full_config.option<ConfigOptionFloats>("retraction_distances_when_cut");
+    if (printer_retraction_distance_when_cut_opt) {
+        printer_retraction_distance_when_cut = printer_retraction_distance_when_cut_opt->values;
+        BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": get retraction_distances_when_cut from config, size=%1%, values=%2%")%printer_retraction_distance_when_cut.size() %printer_retraction_distance_when_cut_opt->serialize();
+    }
+
+    const ConfigOptionBools* filament_long_retractions_when_cut_opt = full_config.option<ConfigOptionBools>("filament_long_retractions_when_cut");
+    if (filament_long_retractions_when_cut_opt) {
+        filament_long_retractions_when_cut = filament_long_retractions_when_cut_opt->values;
+        BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": get filament_long_retractions_when_cut from config, size=%1%, values=%2%")%filament_long_retractions_when_cut.size() %filament_long_retractions_when_cut_opt->serialize();
+    }
+
+    for (size_t idx = 0; idx < filament_size; ++idx) {
+        int extra_flush_volume = nozzle_volume_val;
+        int retract_length = machine_enabled_level && machine_activated ? printer_retraction_distance_when_cut[0] : 0;
+
+        unsigned char filament_activated = filament_long_retractions_when_cut[idx];
+        double filament_retract_length = filament_retraction_distance_when_cut[idx];
+
+        if (filament_activated == 0)
+            retract_length = 0;
+        else if (filament_activated == 1 && machine_enabled_level == LongRectrationLevel::EnableFilament) {
+            if (!std::isnan(filament_retract_length))
+                retract_length = (int)filament_retraction_distance_when_cut[idx];
+            else
+                retract_length = printer_retraction_distance_when_cut[0];
+        }
+
+        extra_flush_volume -= PI * 1.75 * 1.75 / 4 * retract_length;
+        extra_flush_volumes.emplace_back(extra_flush_volume);
+    }
+    return extra_flush_volumes;
+}
+
+bool is_support_filament(PresetBundle& preset_bundle, int extruder_id)
+{
+    auto &filament_presets = preset_bundle.filament_presets;
+    auto &filaments        = preset_bundle.filaments;
+
+    if (extruder_id >= filament_presets.size()) return false;
+
+    Slic3r::Preset *filament = filaments.find_preset(filament_presets[extruder_id]);
+    if (filament == nullptr) return false;
+
+    Slic3r::ConfigOptionBools *support_option = dynamic_cast<Slic3r::ConfigOptionBools *>(filament->config.option("filament_is_support"));
+    if (support_option == nullptr) return false;
+
+    return support_option->get_at(0);
+};
+
+int calc_flushing_volume_from_rgb(const Slic3r::ColorRGB& from_, const Slic3r::ColorRGB& to_ ,int min_flush_volume)
+{
+    Slic3r::FlushVolCalculator calculator(min_flush_volume, Slic3r::g_max_flush_volume);
+
+    return calculator.calc_flush_vol(255, from_.r_uchar(), from_.g_uchar(), from_.b_uchar(),
+         255, to_.r_uchar(), to_.g_uchar(), to_.b_uchar());
+}
+
+void recalc_flushing_volumes(DynamicPrintConfig& config, PresetBundle& preset_bundle)
+{
+    std::vector<double> m_matrix  = (config.option<ConfigOptionFloats>("flush_volumes_matrix"))->values;
+    const std::vector<double>& init_extruders   = (config.option<ConfigOptionFloats>("flush_volumes_vector"))->values;
+    ConfigOptionFloat*         flush_multi_opt  = config.option<ConfigOptionFloat>("flush_multiplier");
+    float                      flush_multiplier = flush_multi_opt ? flush_multi_opt->getFloat() : 1.f;
+
+    const std::vector<std::string> extruder_colours  = config.option<ConfigOptionStrings>("filament_colour")->values;
+    std::vector<int> m_min_flush_volume  = get_min_flush_volumes(config);
+    unsigned int m_number_of_extruders                 = (int) (sqrt(m_matrix.size()) + 0.001);
+
+    std::vector<Slic3r::ColorRGB> m_colours;
+    for (const std::string& color : extruder_colours) {
+        Slic3r::ColorRGB rgb;
+        Slic3r::decode_color(color, rgb);
+        m_colours.push_back(rgb);
+    }
+
+    auto&  ams_multi_color_filament = preset_bundle.ams_multi_color_filment;
+    std::vector<std::vector<Slic3r::ColorRGB>> multi_colors;
+
+    // Support for multi-color filament
+    for (int i = 0; i < m_colours.size(); ++i) {
+        std::vector<Slic3r::ColorRGB> single_filament;
+        if (i < ams_multi_color_filament.size()) {
+            if (!ams_multi_color_filament[i].empty()) {
+                std::vector<std::string> colors = ams_multi_color_filament[i];
+                for (int j = 0; j < colors.size(); ++j) {
+                    Slic3r::ColorRGB rgb;
+                    Slic3r::decode_color(colors[j], rgb);                    
+                    single_filament.push_back(rgb);
+                }
+                multi_colors.push_back(single_filament);
+                continue;
+            }
+        }
+        single_filament.push_back(m_colours[i]);
+        multi_colors.push_back(single_filament);
+    }
+
+    for (int from_idx = 0; from_idx < multi_colors.size(); ++from_idx) {
+        bool is_from_support = is_support_filament(preset_bundle, from_idx);
+        for (int to_idx = 0; to_idx < multi_colors.size(); ++to_idx) {
+            bool is_to_support = is_support_filament(preset_bundle, to_idx);
+            if (from_idx == to_idx) {
+                ;// edit_boxes[to_idx][from_idx]->SetValue(std::to_string(0));
+            } else {
+                int flushing_volume = 0;
+                if (is_to_support) {
+                    flushing_volume = Slic3r::g_flush_volume_to_support;
+                } else {
+                    for (int i = 0; i < multi_colors[from_idx].size(); ++i) {
+                        const Slic3r::ColorRGB& from = multi_colors[from_idx][i];
+                        for (int j = 0; j < multi_colors[to_idx].size(); ++j) {
+                            const Slic3r::ColorRGB& to     = multi_colors[to_idx][j];
+                            int             volume = calc_flushing_volume_from_rgb(from, to, m_min_flush_volume[from_idx]);
+                            flushing_volume        = std::max(flushing_volume, volume);
+                        }
+                    }
+
+                    if (is_from_support) {
+                        flushing_volume = std::max(Slic3r::g_min_flush_volume_from_support, flushing_volume);
+                    }
+                }
+
+                m_matrix[m_number_of_extruders * from_idx + to_idx] = flushing_volume;
+                //flushing_volume                                     = int(flushing_volume * get_flush_multiplier());
+                //edit_boxes[to_idx][from_idx]->SetValue(std::to_string(flushing_volume));
+            }
+        }
+    }
+
+    config.option<ConfigOptionFloats>("flush_volumes_matrix")->values = m_matrix;    
+}
 }

@@ -1133,6 +1133,8 @@ static void modulate_extrusion_by_overlapping_layers(
     // Get the initial extrusion parameters.
     ExtrusionPath *extrusion_path_template = dynamic_cast<ExtrusionPath*>(extrusions_in_out.front());
     assert(extrusion_path_template != nullptr);
+    if (extrusion_path_template == nullptr)
+        return;
     ExtrusionRole extrusion_role  = extrusion_path_template->role();
     float         extrusion_width = extrusion_path_template->width;
 
@@ -1207,11 +1209,30 @@ static void modulate_extrusion_by_overlapping_layers(
     {
         Polylines &polylines = path_fragments.back().polylines;
         for (ExtrusionEntity *ee : extrusions_in_out) {
-            ExtrusionPath *path = dynamic_cast<ExtrusionPath*>(ee);
-            assert(path != nullptr);
-            polylines.emplace_back(Polyline(std::move(path->polyline)));
-            path_ends.emplace_back(std::pair<Point, Point>(polylines.back().points.front(), polylines.back().points.back()));
-            delete path;
+          if (ExtrusionEntityCollection* collection = dynamic_cast<ExtrusionEntityCollection*>(ee)) 
+          {
+              for (size_t i = 0; i < collection->entities.size(); i++) {
+                 if (ExtrusionPath* path = dynamic_cast<ExtrusionPath*>(collection->entities[i])) {
+                      polylines.emplace_back(Polyline(std::move(path->polyline)));
+                      path_ends.emplace_back(std::pair<Point, Point>(polylines.back().points.front(), polylines.back().points.back()));
+                      delete path;
+                 }
+              }
+          }
+          else if (const ExtrusionPath* path = dynamic_cast<ExtrusionPath*>(ee)) 
+          {
+              polylines.emplace_back(Polyline(std::move(path->polyline)));
+              path_ends.emplace_back(std::pair<Point, Point>(polylines.back().points.front(), polylines.back().points.back()));
+              delete path;
+          } 
+          else if (const ExtrusionMultiPath* multipath = dynamic_cast<ExtrusionMultiPath*>(ee)) 
+          {
+                for (const ExtrusionPath& path : multipath->paths) 
+                {
+                    polylines.emplace_back(Polyline(std::move(path.polyline)));
+                    path_ends.emplace_back(std::pair<Point, Point>(polylines.back().points.front(), polylines.back().points.back()));
+                }
+          } 
         }
     }
     // Destroy the original extrusion paths, their polylines were moved to path_fragments already.
@@ -1465,6 +1486,8 @@ void generate_support_toolpaths(
     if ((is_tree(config.support_type) ? config.support_base_pattern_tree : config.support_base_pattern) == smpRectilinearGrid)
         angles.push_back(support_params.interface_angle);
 
+    bool have_infill = config.support_base_pattern != smpNone;
+
     BoundingBox bbox_object(Point(-scale_(1.), -scale_(1.0)), Point(scale_(1.), scale_(1.)));
 
 //    const coordf_t link_max_length_factor = 3.;
@@ -1583,7 +1606,7 @@ void generate_support_toolpaths(
 
     tbb::parallel_for(tbb::blocked_range<size_t>(n_raft_layers, support_layers.size()),
         [&config, &slicing_params, &support_params, &support_layers, &bottom_contacts, &top_contacts, &intermediate_layers, &interface_layers, &base_interface_layers, &layer_caches, &loop_interface_processor,
-            &bbox_object, &angles, n_raft_layers, link_max_length_factor]
+            &bbox_object, &angles,&have_infill, n_raft_layers, link_max_length_factor]
             (const tbb::blocked_range<size_t>& range) {
         // Indices of the 1st layer in their respective container at the support layer height.
         size_t idx_layer_bottom_contact   = size_t(-1);
@@ -1618,7 +1641,7 @@ void generate_support_toolpaths(
         {
             SupportLayer &support_layer = *support_layers[support_layer_id];
             LayerCache   &layer_cache   = layer_caches[support_layer_id];
-            const float   support_interface_angle = (support_params.support_style == smsGrid || config.support_interface_pattern == smipRectilinear) ?
+            const float   support_interface_angle = ((support_params.support_style == smsGrid && config.support_interface_pattern != smipRectilinearInterlaced) || config.support_interface_pattern == smipRectilinear) ?
                 support_params.interface_angle : support_params.raft_interface_angle(support_layer.interface_id());
 
             // Find polygons with the same print_z.
@@ -1795,6 +1818,10 @@ void generate_support_toolpaths(
                 filler->link_max_length = coord_t(scale_(filler->spacing * link_max_length_factor / support_params.support_density));
                 float density = float(support_params.support_density);
                 bool  sheath  = support_params.with_sheath;
+                if (support_layer_id > 0 && !have_infill) {
+                    density = 0;
+                    sheath  = true;
+                }
                 bool  no_sort = false;
                 bool  done    = false;
                 if (base_layer.layer->bottom_z < EPSILON) {

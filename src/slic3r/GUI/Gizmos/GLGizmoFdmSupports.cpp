@@ -13,8 +13,11 @@
 #include "slic3r/GUI/GUI_ObjectList.hpp"
 #include "slic3r/GUI/format.hpp"
 #include "slic3r/GUI/GUI.hpp"
+//#include "slic3r/GUI/BedShapeDialog.hpp"
+#include "slic3r/GUI/Tab.hpp"
 #include "slic3r/Utils/UndoRedo.hpp"
-
+#include <imgui/imgui.h>
+#include <imgui/imgui_internal.h>
 #include <GL/glew.h>
 
 #include <boost/log/trivial.hpp>
@@ -274,6 +277,47 @@ void GLGizmoFdmSupports::on_render_input_window(float x, float y, float bottom_l
 
     float drag_pos_times     = 0.7;
 
+    Tab*       tab   = wxGetApp().get_model_tab();
+    TabPrintModel* pTabM = dynamic_cast<TabPrintModel*>(tab);
+
+    SupportType    supportType   = boost::any_cast<SupportType>(pTabM->value("support_type"));
+    bool supportEnable = boost::any_cast<bool>(pTabM->value("enable_support"));
+    
+    m_CurType = supportType;
+    if (m_IsSupport != supportEnable) {
+        m_IsSupport = supportEnable;
+    }
+
+    bool isSupport = m_IsSupport;
+
+    ImGui::AlignTextToFramePadding();
+    m_imgui->text(_L("Enable support"));
+    ImGui::SameLine();
+    m_imgui->bbl_checkbox("", m_IsSupport);
+
+    if (tab && m_IsSupport != isSupport) {
+        PageShp strength_page = tab->get_page(L("Support"));
+        if (strength_page) {
+            ConfigOptionsGroupShp optgroup = strength_page->get_optgroup(L("Support"));
+            if (optgroup) {
+                optgroup->on_change_OG("enable_support", m_IsSupport);
+            }
+        }
+    }
+    // 禁用当前页面
+    ImGui::PushItemFlag(ImGuiItemFlags_Disabled, !m_IsSupport);
+    const bool is_changed = render_combo(_u8L("Type"), m_SupportTypes, m_CurType);
+
+    if (tab && is_changed) {
+        PageShp strength_page = tab->get_page(L("Support"));
+        if (strength_page) {
+            ConfigOptionsGroupShp optgroup = strength_page->get_optgroup(L("Support"));
+            if (optgroup) {
+                optgroup->on_change_OG("support_type", m_CurType);
+            }
+        }
+    }
+
     ImGui::AlignTextToFramePadding();
     m_imgui->text(m_desc.at("tool_type"));
     std::array<wchar_t, 4> tool_ids = { ImGui::CircleButtonIcon, ImGui::SphereButtonIcon, ImGui::FillButtonIcon, ImGui::GapFillIcon };
@@ -523,6 +567,8 @@ void GLGizmoFdmSupports::on_render_input_window(float x, float y, float bottom_l
 
     // BBS
     ImGuiWrapper::pop_toolbar_style();
+    // 恢复控件状态
+    ImGui::PopItemFlag();
 }
 
 void GLGizmoFdmSupports::tool_changed(wchar_t old_tool, wchar_t new_tool)
@@ -700,6 +746,22 @@ void GLGizmoFdmSupports::update_from_model_object(bool first_update)
 PainterGizmoType GLGizmoFdmSupports::get_painter_type() const
 {
     return PainterGizmoType::FDM_SUPPORTS;
+}
+
+bool GLGizmoFdmSupports::render_combo(const std::string& label, const std::vector<std::string>& lines, int& selection_idx)
+{
+    ImGui::AlignTextToFramePadding();
+    bool   is_dark           = wxGetApp().dark_mode();
+    ImVec4 borderColor_dark  = {110 / 255.f, 110 / 255.f, 114 / 255.f, 1.0f};
+    ImVec4 borderColor_light = {214 / 255.0f, 214 / 255.0f, 220 / 255.0f, 1.0f};
+    ImGui::PushStyleColor(ImGuiCol_Border, is_dark ? borderColor_dark : borderColor_light);
+    ImGuiWrapper::push_combo_style(m_parent.get_scale());
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 5.0f);
+    const bool is_changed = m_imgui->combo(label, lines, selection_idx, 0, 60.0f * m_parent.get_scale(), 120.0f * m_parent.get_scale());
+    ImGui::PopStyleVar();
+    ImGuiWrapper::pop_combo_style();
+    ImGui::PopStyleColor();
+    return is_changed;
 }
 
 wxString GLGizmoFdmSupports::handle_snapshot_action_name(bool shift_down, GLGizmoPainterBase::Button button_down) const

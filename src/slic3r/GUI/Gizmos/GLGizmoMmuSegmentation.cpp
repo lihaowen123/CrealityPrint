@@ -396,7 +396,8 @@ void GLGizmoMmuSegmentation::on_render_input_window(float x, float y, float bott
     const float approx_height = m_imgui->scaled(22.0f);
     y = std::min(y, bottom_limit - approx_height);
     GizmoImguiSetNextWIndowPos(x, y, ImGuiCond_Always);
-
+    m_imgui_start_pos[0] = x;
+    m_imgui_start_pos[1] = y;
     wchar_t old_tool = m_current_tool;
 
     // BBS
@@ -717,6 +718,17 @@ void GLGizmoMmuSegmentation::on_render_input_window(float x, float y, float bott
         bool b_clp_dist_input = ImGui::BBLDragFloat("##clp_dist_input", &clp_dist, 0.05f, 0.0f, 0.0f, "%.2f");
 
         if (slider_clp_dist || b_clp_dist_input) { m_c->object_clipper()->set_position_by_ratio(clp_dist, true); }
+
+        m_imgui->bbl_checkbox(_L("Display height range from bottom"), m_show_height_range_by_imgui);
+
+        if (!m_show_height_range_by_imgui) {
+            m_imgui->disabled_begin(true);
+        }
+        m_imgui->bbl_checkbox(_L("Place input box near mouse"), m_lock_x_for_height_bottom);
+
+        if (!m_show_height_range_by_imgui) {
+            m_imgui->disabled_end();
+        }
     }
     else if (m_current_tool == ImGui::GapFillIcon) {
         m_tool_type = ToolType::GAP_FILL;
@@ -788,6 +800,8 @@ void GLGizmoMmuSegmentation::on_render_input_window(float x, float y, float bott
         m_parent.set_as_dirty();
     }
     ImGui::PopStyleVar(2);
+    m_imgui_end_pos[0] = m_imgui_start_pos[0] + ImGui::GetWindowWidth();
+    m_imgui_end_pos[1] = m_imgui_start_pos[1] + ImGui::GetWindowHeight();
     GizmoImguiEnd();
 
     // BBS

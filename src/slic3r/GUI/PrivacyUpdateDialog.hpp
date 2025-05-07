@@ -8,6 +8,7 @@
 #include <wx/webview.h>
 #include <wx/progdlg.h>
 #include <wx/simplebook.h>
+#include <wx/html/htmlwin.h>
 
 namespace Slic3r { namespace GUI {
 
@@ -31,6 +32,7 @@ public:
         const wxSize& size = wxDefaultSize,
         long style = wxPD_APP_MODAL| wxCAPTION
     );
+    void onLinkClicked(wxHtmlLinkEvent& event);
     wxWebView* CreateTipView(wxWindow* parent);
     void OnNavigating(wxWebViewEvent& event);
     bool ShowReleaseNote(std::string content);

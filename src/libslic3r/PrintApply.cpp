@@ -135,7 +135,8 @@ struct PrintObjectTrafoAndInstances
 };
 
 // Generate a list of trafos and XY offsets for instances of a ModelObject
-static std::vector<PrintObjectTrafoAndInstances> print_objects_from_model_object(const ModelObject &model_object)
+static std::vector<PrintObjectTrafoAndInstances> print_objects_from_model_object(const ModelObject& model_object,
+                                                                                 const Vec3d&       shrinkage_compensation)
 {
     std::set<PrintObjectTrafoAndInstances> trafos;
     PrintObjectTrafoAndInstances           trafo;
@@ -143,7 +144,12 @@ static std::vector<PrintObjectTrafoAndInstances> print_objects_from_model_object
     int index = 0;
     for (ModelInstance *model_instance : model_object.instances) {
         if (model_instance->is_printable()) {
-            trafo.trafo = model_instance->get_matrix();
+          //  trafo.trafo = model_instance->get_matrix();
+
+            // Orca: Updated with XYZ filament shrinkage compensation
+            Geometry::Transformation model_instance_transformation = model_instance->get_transformation();
+            trafo.trafo = model_instance_transformation.get_matrix_with_applied_shrinkage_compensation(shrinkage_compensation);
+
             auto shift = Point::new_scale(trafo.trafo.data()[12], trafo.trafo.data()[13]);
             // Reset the XY axes of the transformation.
             trafo.trafo.data()[12] = 0;
@@ -1169,10 +1175,10 @@ std::vector<unsigned int> get_used_extruders(const Model &model, DynamicPrintCon
 }
 Print::ApplyStatus Print::apply(const Model &model, DynamicPrintConfig new_full_config)
 {
-#if 0
+#if 1
     boost::filesystem::path temp_path(temporary_dir());
-    std::string cache_file_name = temp_path.string() + "/temp.slice.cache";
-    cache_slice_scene(*this, model, new_full_config, cache_file_name);
+    // std::string cache_file_name = temp_path.string() + "/temp.slice.cache";
+    // cache_slice_scene(*this, model, new_full_config, cache_file_name);
 
     std::string json_file_name = temp_path.string() + "/full_print_config.json";
     new_full_config.save_to_json(json_file_name, "", "", "");
@@ -1569,7 +1575,7 @@ Print::ApplyStatus Print::apply(const Model &model, DynamicPrintConfig new_full_
         // Walk over all new model objects and check, whether there are matching PrintObjects.
         for (ModelObject *model_object : m_model.objects) {
             ModelObjectStatus &model_object_status = const_cast<ModelObjectStatus&>(model_object_status_db.reuse(*model_object));
-            model_object_status.print_instances    = print_objects_from_model_object(*model_object);
+            model_object_status.print_instances    = print_objects_from_model_object(*model_object, this->shrinkage_compensation());
             std::vector<const PrintObjectStatus*> old;
             old.reserve(print_object_status_db.count(*model_object));
             for (const PrintObjectStatus &print_object_status : print_object_status_db.get_range(*model_object))

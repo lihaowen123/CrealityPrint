@@ -78,7 +78,7 @@ protected:
 		VERT_SPACING = 15,//TO
 	};
 
-	MsgDialog(wxWindow *parent, const wxString &title, const wxString &headline, long style = wxOK, wxBitmap bitmap = wxNullBitmap);
+	MsgDialog(wxWindow *parent, const wxString &title, const wxString &headline, long style = wxOK, wxBitmap bitmap = wxNullBitmap, bool useApplyStyle = true);
 	// returns pointer to created button
 	Button* add_button(wxWindowID btn_id, bool set_focus = false, const wxString& label = wxString());
 	// returns pointer to found button or NULL
@@ -408,6 +408,21 @@ private:
     Button *      m_update_btn = nullptr;
     Button *      m_later_btn  = nullptr;
     wxStaticText *m_msg_text   = nullptr;
+};
+
+class AutoMappingLoginMsgDialog : public MsgDialog
+{
+public:
+    // NOTE! Don't change a signature of contsrucor. It have to  be tha same as for wxMessageDialog
+    AutoMappingLoginMsgDialog(wxWindow* parent, const wxString& message, const wxString& caption = wxEmptyString, long style = wxOK);
+    AutoMappingLoginMsgDialog(MessageDialog&&)      = delete;
+    AutoMappingLoginMsgDialog(const MessageDialog&) = delete;
+    AutoMappingLoginMsgDialog& operator=(MessageDialog&&) = delete;
+    AutoMappingLoginMsgDialog& operator=(const MessageDialog&) = delete;
+    virtual ~AutoMappingLoginMsgDialog()                       = default;
+
+protected:
+    void apply_style(long style);
 };
 
 }

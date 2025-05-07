@@ -4315,6 +4315,8 @@ public:
         int        width  = GetClientSize().GetWidth();
         int        height = GetClientSize().GetHeight();
         wxMemoryDC memDC;
+        wxFont     font = Label::Body_12;
+        memDC.SetFont(font);
         {
             wxBitmap bitmap(width, height, -1);
             memDC.SelectObject(bitmap);
@@ -4331,7 +4333,7 @@ public:
                 wxGraphicsContext* gc = wxGraphicsContext::Create(memDC);
                 if (gc) {
                     if (m_state == 0) {
-                        gc->SetPen(wxPen(wxColour("#6E6E72"), 2, wxPENSTYLE_SOLID));
+                        gc->SetPen(wxPen(wxColour("#6E6E72"), 1, wxPENSTYLE_SOLID));
                         gc->DrawRoundedRectangle(m_rtCheckbox.x, m_rtCheckbox.y, m_rtCheckbox.width, m_rtCheckbox.height, m_round);
                     } else if (m_state == 1) {
                         gc->SetBrush(wxBrush(wxColour("#17CC5F"), wxBRUSHSTYLE_SOLID));
@@ -7188,7 +7190,9 @@ void EditFilamentPresetDialog::edit_preset()
     }
     else
     {
+#ifndef __APPLE__
         wxGetApp().params_dialog()->Popup();
+#endif
     }
     tab->restore_last_select_item();
 

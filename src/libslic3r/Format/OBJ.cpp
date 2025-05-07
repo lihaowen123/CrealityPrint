@@ -41,7 +41,18 @@ bool load_obj(const char *path, TriangleMesh *meshptr, ObjInfo& obj_info, std::s
             }
             exist_mtl = true;
             bool                    mtl_name_is_path = false;
-            boost::filesystem::path mtl_abs_path(mtl_name);
+            //boost::filesystem::path mtl_abs_path(mtl_name);
+            fs::path mtl_abs_path ;
+            try
+            {
+                mtl_abs_path = fs::path(mtl_name);
+            }
+            catch (const boost::system::system_error& e)
+            {
+                std::wstring wide_str = boost::nowide::widen(mtl_name);
+                mtl_abs_path = fs::path(wide_str);
+            }
+
             if (boost::filesystem::exists(mtl_abs_path)) {
                 mtl_name_is_path = true;
             }
@@ -50,7 +61,18 @@ bool load_obj(const char *path, TriangleMesh *meshptr, ObjInfo& obj_info, std::s
                 boost::filesystem::path full_path(path);
                 std::string             dir = full_path.parent_path().string();
                 auto                    mtl_file = dir + "/" + mtl_name;
-                boost::filesystem::path temp_mtl_path(mtl_file);
+                //boost::filesystem::path temp_mtl_path(mtl_file);
+                fs::path temp_mtl_path;
+                try
+                {
+                    temp_mtl_path = fs::path(mtl_file);
+                }
+                catch (const boost::system::system_error& e)
+                {
+                    std::wstring wide_str = boost::nowide::widen(mtl_file);
+                    temp_mtl_path = fs::path(wide_str);
+                }
+
                 mtl_path = temp_mtl_path;
             }
             auto    _mtl_path = mtl_name_is_path ? mtl_abs_path.string().c_str() : mtl_path.string().c_str();

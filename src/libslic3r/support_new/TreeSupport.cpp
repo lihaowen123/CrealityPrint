@@ -605,6 +605,8 @@ TreeSupport::TreeSupport(PrintObject& object, const SlicingParameters &slicing_p
     m_raft_layers = slicing_params.base_raft_layers + slicing_params.interface_raft_layers;
     support_type = m_object_config->support_type;
 
+    minimum_roof_area = scaled<double>(scaled<double>(m_object_config->support_interface_min_area.value));
+
     SupportMaterialPattern support_pattern  = m_object_config->support_base_pattern;
     if (m_support_params.support_style == smsTreeHybrid && support_pattern == smpDefault)
         support_pattern = smpRectilinear;
@@ -1021,18 +1023,19 @@ void TreeSupport::detect_overhangs(bool check_support_necessity/* = false*/)
             }
 
             if (!cluster.is_sharp_tail && !cluster.is_cantilever) {
-                // 2. check overhang cluster size is smaller than 3.0 * fw_scaled
-                auto erode1 = offset_ex(cluster.merged_poly, -1 * extrusion_width_scaled);
-                Point bbox_sz = get_extents(erode1).size();
-                if (bbox_sz.x() < 2 * extrusion_width_scaled || bbox_sz.y() < 2 * extrusion_width_scaled) {
-                    cluster.is_small_overhang = true;
-                }
-            }
+                //// 2. check overhang cluster size is smaller than 3.0 * fw_scaled
+                //auto erode1 = offset_ex(cluster.merged_poly, -1 * extrusion_width_scaled);
+                //Point bbox_sz = get_extents(erode1).size();
+                //if (bbox_sz.x() < 2 * extrusion_width_scaled || bbox_sz.y() < 2 * extrusion_width_scaled) {
+                //    cluster.is_small_overhang = true;
+                //}
 
-            // 4. check minimum support area
-            float supported_area = area(cluster.merged_poly);
-            if (supported_area < minimum_support_area) {
-                cluster.is_small_overhang = true;
+                // 4. check minimum support area
+                float supported_area = area(cluster.merged_poly);
+                if (supported_area < minimum_support_area) {
+                    cluster.is_small_overhang = true;
+                } else
+                    cluster.is_small_overhang = false;
             }
 
 #ifdef SUPPORT_TREE_DEBUG_TO_SVG
@@ -1373,6 +1376,16 @@ void TreeSupport::generate_toolpaths()
     const coordf_t branch_radius = object_config.tree_support_branch_diameter.value / 2;
     const coordf_t branch_radius_scaled = scale_(branch_radius);
 
+    std::vector<double> angles_tree{object_config.support_angle};
+    if (object_config.support_base_pattern_tree == smpRectilinearGrid)
+        angles_tree.push_back(object_config.support_angle + 90.f);
+
+    std::vector<double> angles{object_config.support_angle};
+    if (object_config.support_base_pattern == smpRectilinearGrid)
+        angles.push_back(object_config.support_angle + 90.f);
+
+    bool have_infill = object_config.support_base_pattern_tree != smpNone;
+
     if (m_object->support_layers().empty())
         return;
 
@@ -1593,11 +1606,14 @@ void TreeSupport::generate_toolpaths()
                     }
                     else {
                         // base_areas
-                        Flow flow               = (layer_id == 0 && m_raft_layers == 0) ? m_object->print()->brim_flow() : support_flow;
-                        bool need_infill = with_infill;
+                        Flow flow = (layer_id == 0 && m_raft_layers == 0) ? m_object->print()->brim_flow() : support_flow;
+                        bool need_infill  = (area_group.node_type != ePolygon) ? have_infill: with_infill;
                         SupportMaterialPattern support_pattern  = (area_group.node_type != ePolygon) ? m_object_config->support_base_pattern_tree :m_object_config->support_base_pattern;
                         if (support_pattern == smpDefault)
                             need_infill &= area_group.need_infill;
+
+                        if (!have_infill && area_group.node_type != ePolygon)
+                            need_infill = false;
 
                         //cross pattern
                         bool is_tree_hybrid_cross_height = (m_support_params.support_style==smsTreeHybrid && ts_layer->print_z < m_object_config->tree_hybrid_cross_height && area_group.dist_to_top < (m_object_config->tree_hybrid_cross_height + 2 - ts_layer->print_z));
@@ -1610,7 +1626,8 @@ void TreeSupport::generate_toolpaths()
                         std::shared_ptr<Fill> filler_support = std::shared_ptr<Fill>(Fill::new_from_type(layer_id == 0 && !is_tree_hybrid_corss_area ? ipConcentric : base_fill_pattern));
                         filler_support->set_bounding_box(bbox_object);
                         filler_support->spacing = support_flow.spacing();
-                        filler_support->angle = Geometry::deg2rad(object_config.support_angle.value);
+                        double angle = (area_group.node_type != ePolygon) ? angles_tree[layer_id % angles_tree.size()] : angles[layer_id % angles.size()];
+                        filler_support->angle   = Geometry::deg2rad(angle);
 
                         // cross pattern
                         if (is_tree_hybrid_cross_height) {
@@ -2141,6 +2158,8 @@ void TreeSupport::draw_circles()
                 SupportLayer* ts_layer_prev = (layer_nr + m_raft_layers) > 1 ? m_object->get_support_layer(layer_nr + m_raft_layers - 1) : nullptr;
 
                 assert(ts_layer != nullptr);
+                if (ts_layer == nullptr)
+                    continue;
 
                 // skip if current layer has no points. This fixes potential crash in get_collision (see jira BBL001-355)
                 if (curr_layer_nodes.empty()) {
@@ -2463,6 +2482,7 @@ void TreeSupport::draw_circles()
                 const std::vector<SupportNode*>& curr_layer_nodes = contact_nodes[layer_nr];
                 SupportLayer* ts_layer = m_object->get_support_layer(layer_nr + m_raft_layers);
                 assert(ts_layer != nullptr);
+                if (ts_layer == nullptr) continue;
 
                 // skip if current layer has no points. This fixes potential crash in get_collision (see jira BBL001-355)
                 if (curr_layer_nodes.empty()) continue;
@@ -2553,6 +2573,7 @@ void TreeSupport::draw_circles()
                 const std::vector<SupportNode*>& curr_layer_nodes = contact_nodes[layer_nr];
                 SupportLayer* ts_layer = m_object->get_support_layer(layer_nr + m_raft_layers);
                 assert(ts_layer != nullptr);
+                if (ts_layer == nullptr) continue;
 
                 // skip if current layer has no points. This fixes potential crash in get_collision (see jira BBL001-355)
                 if (curr_layer_nodes.empty()) continue;

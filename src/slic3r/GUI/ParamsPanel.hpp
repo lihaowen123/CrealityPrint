@@ -109,6 +109,7 @@ class MyTreeItemData : public wxTreeItemData
 public:
     MyTreeItemData(const wxString& data) : m_data(data) {}
     wxString GetData() const { return m_data; }
+    void     setData(const wxString& data) { m_data = data; }
 
 private:
     wxString m_data = wxString();
@@ -311,8 +312,9 @@ class ParamsPanel : public wxPanel
         void setCurVentor(const std::string& curVentor);
         void setCurType(const std::string& curType);
         std::string getPresetType(Preset reset);
-        void SelectRowByString(const wxString& text);
-        bool SelectRowRecursive(const wxTreeItemId& item, const wxString& text);
+        wxTreeItemId getItemIdByName(const wxString& name);
+        wxTreeItemId             SelectRowRecursive(const wxTreeItemId& item, const wxString& text);
+        bool SelectRowByString(const wxString& text);
         std::vector<std::string> filterVentor();
         std::vector<std::string> filterPresetType(const std::string& vector);
 
@@ -335,11 +337,12 @@ class ParamsPanel : public wxPanel
         wxString m_curVentor = wxString();
         wxString m_printerType = wxString();
         wxString m_curPreset = wxString();
-        wxTreeItemId                                                   m_curItem;
+        //wxTreeItemId                                                   m_curItem;
 
         wxColor m_normal_color = wxColor(110, 110, 115);
         wxColor m_hover_color = wxColor(23, 204, 95);
 
+        bool            m_IsNeed          = true;
         PageState m_ps = PS_SYSTEM;
         WindowState m_ws = WS_PRINTER;
         wxPanel* m_btnsPanel = nullptr;

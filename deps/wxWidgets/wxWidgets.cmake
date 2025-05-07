@@ -17,8 +17,6 @@ else ()
     set(_wx_edge "-DwxUSE_WEBVIEW_EDGE=OFF")
 endif ()
 
-message(STATUS "building wxwidgets")
-
 # Note: The flatpak build builds wxwidgets separately due to CI size constraints.
 # ANY CHANGES MADE IN HERE MUST ALSO BE REFLECTED IN `flatpak/io.github.SoftFever.OrcaSlicer.yml`.
 # ** THIS INCLUDES BUILD ARGS. **
@@ -26,8 +24,8 @@ message(STATUS "building wxwidgets")
 
 orcaslicer_add_cmake_project(
     wxWidgets
-    GIT_REPOSITORY "https://github.com/CrealityOfficial/Orca-deps-wxWidgets.git"
-    GIT_SHALLOW ON
+    URL "https://github.com/CrealityOfficial/Orca-deps-wxWidgets/archive/refs/tags/v1.0.0.tar.gz"
+    URL_HASH SHA256=74089054448d887c1b551ac98f4b46fa8960a5168df48aa77700c7a58071148c
     DEPENDS ${PNG_PKG} ${ZLIB_PKG} ${EXPAT_PKG} ${TIFF_PKG} ${JPEG_PKG}
     CMAKE_ARGS
         -DwxBUILD_PRECOMP=ON

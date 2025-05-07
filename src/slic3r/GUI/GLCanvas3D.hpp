@@ -991,6 +991,7 @@ public:
     void do_center_plate(const int plate_idx);
     void do_mirror(const std::string& snapshot_type);
 
+    void on_object_list_selected();
     void update_gizmos_on_off_state();
     void reset_all_gizmos() { m_gizmos.reset_all_states(); }
 

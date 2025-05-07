@@ -365,10 +365,10 @@ void GLToolbar::update_hover_state_vertical(const Vec2d& mouse_pos, GLCanvas3D& 
 
     float left = m_layout.left + border;
     float top  = m_layout.top - border;
-    auto tt = DispConfig().getTexture(DispConfig::e_tt_collapse_item);
+    //auto tt = DispConfig().getTexture(DispConfig::e_tt_collapse_item);
 	float right = cnv_size.get_width() * 0.5;
-	left = right - tt->get_width();
-	float bottom = top - tt->get_height();
+	left = right - m_layout.width;
+	float bottom = top - m_layout.height;
 
 	GLToolbarItem::EState state = m_item->get_state();
 	const bool inside = (left <= (float)scaled_mouse_pos.x()) &&
@@ -472,9 +472,9 @@ bool GLToolbar::contains_mouse_vertical(const Vec2d& mouse_pos, const GLCanvas3D
 	if (!m_item->is_visible())
 		false;
 
-    auto tt = DispConfig().getTexture(DispConfig::e_tt_collapse_item);
-	float right = left + tt->get_width();
-	float bottom = top - tt->get_height();
+    //auto tt = DispConfig().getTexture(DispConfig::e_tt_collapse_item);
+	float right = left + m_layout.width;
+	float bottom = top - m_layout.height;
 
 	// mouse inside the icon
 	if (left <= (float)scaled_mouse_pos.x() &&
@@ -558,9 +558,9 @@ void GLToolbar::render_vertical(const GLCanvas3D& parent)
 
     const float border_w = 2.0f * m_layout.border * m_layout.scale * inv_cnv_w;
     const float border_h = 2.0f * m_layout.border * m_layout.scale * inv_cnv_h;
-    auto bk = DispConfig().getTexture(DispConfig::e_tt_collapse);
-    const float width = 2.0f * bk->get_width() * inv_cnv_w;
-    const float height = 2.0f * bk->get_height() * inv_cnv_h;
+    //auto bk = DispConfig().getTexture(DispConfig::e_tt_collapse);
+    const float width = 2.0f * m_layout.width * inv_cnv_w;
+    const float height = 2.0f * m_layout.height * inv_cnv_h;
 
     float left         = 2.0f * m_layout.left * inv_cnv_w;
     float top          = 2.0f * m_layout.top * inv_cnv_h;

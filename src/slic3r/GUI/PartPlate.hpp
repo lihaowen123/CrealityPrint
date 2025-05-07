@@ -128,6 +128,8 @@ private:
 
     friend class PartPlateList;
 
+    /* color_bed_exclude_area_cache */
+    bool          m_cache_is_multi_color = false;
     BoundingBoxf3 m_color_bed_exclude_area;
 
     BoundingBoxf3 m_gcode_paths_bounding_box;
@@ -235,6 +237,7 @@ public:
     bool operator<(PartPlate&) const;
 
     const BoundingBoxf3& color_bed_exclude_area(bool* valid = NULL);
+    const BoundingBoxf3& get_color_bed_exclude_area_cache(bool* valid = NULL);
 
     void check_gcode_path_contain_in_bed();
 

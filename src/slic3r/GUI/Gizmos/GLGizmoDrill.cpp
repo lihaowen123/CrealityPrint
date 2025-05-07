@@ -21,6 +21,7 @@
 
 #include "FixModelByWin10.hpp"
 #include <libslic3r/SLA/Hollowing.hpp>
+#include "GLGizmoSimplify.hpp"
 
 #define MAX_SIZE std::string_view { "9999.99" }
 
@@ -134,6 +135,9 @@ bool GLGizmoDrill::gizmo_event(SLAGizmoEventType action, const Vec2d& mouse_posi
     const ModelObject* mo = m_c->selection_info()->model_object();
     if (mo == nullptr)
         return false;
+
+    // check before drill
+    wxGetApp().plater()->check_object_need_repair(m_parent.get_selection().get_object_idx());
 
     double depth = m_depth;
     {
@@ -296,6 +300,10 @@ bool GLGizmoDrill::gizmo_event(SLAGizmoEventType action, const Vec2d& mouse_posi
     const Transform3d instance_matrix = mo->instances[active_inst]->get_transformation().get_matrix_no_offset();
     temp_mesh_resuls.front().transform(instance_matrix.inverse());
     generate_new_volume(true, *temp_mesh_resuls.begin());
+
+    // check after drill
+    wxGetApp().plater()->check_object_need_repair(m_parent.get_selection().get_object_idx(), "drill");
+
     wxGetApp().notification_manager()->close_plater_warning_notification(warning_text);
     return mouse_on_object;
 }
@@ -642,7 +650,6 @@ void GLGizmoDrill::draw_cp_input_double(const std::string& label, double* v, dou
     ImGui::PopStyleVar(2);
     ImGui::PopStyleColor(3);
 }
-
 
 }
 }

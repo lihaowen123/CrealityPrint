@@ -719,7 +719,8 @@ Section "-Core installation"
 
   ExecWait '"$INSTDIR\\${WebView2Installer}" /silent /install'
   ExecWait '"$INSTDIR\\${VCREDIST_X64Installer}" /silent /install'
-  ExecWait '"$INSTDIR\\${STLTHUMB_X64Installer}" /silent /install'
+  ;ExecWait '"$INSTDIR\\${STLTHUMB_X64Installer}" /silent /install'
+  ;ExecWait 'msiexec /i ""$INSTDIR\\${STLTHUMB_X64Installer}" /fa /qn / REBOOT=Suppress' 
 
   ;Store installation folder
   WriteRegStr SHCTX "Software\@CPACK_PACKAGE_VENDOR@\@CPACK_PACKAGE_INSTALL_REGISTRY_KEY@" "" $INSTDIR
@@ -809,12 +810,12 @@ WriteRegStr HKCR "cxprj_cxsw\shell\open\command" "" '"$INSTDIR\${PROCESS_NAME}" 
 System::Call "Shell32::SHChangeNotify(i 0x8000000, i 0, i 0, i 0)"
 
   ;add stl thumb
-  ;ExecWait '"regsvr32" /s "$INSTDIR\STLThumbWinShellExtension.dll"'
-  ;WriteRegStr HKCR ".stl\shellex\{e357fccd-a995-4576-b01f-234630154e96}" "" "{AF07F051-9D08-44A7-8C63-9296ADFEDDD7}"
-  ;WriteRegStr HKCR "CLSID\{AF07F051-9D08-44A7-8C63-9296ADFEDDD7}" "" "STLThumbWinShellExtension.STLThumbnailProvider Class"
-  ;WriteRegDWORD HKCR "CLSID\{AF07F051-9D08-44A7-8C63-9296ADFEDDD7}" "DisableProcessIsolation" 1
-  ;WriteRegStr HKCR "CLSID\{AF07F051-9D08-44A7-8C63-9296ADFEDDD7}\InprocServer32" "" "$INSTDIR\STLThumbWinShellExtension.dll"
-  ;WriteRegStr HKCR "CLSID\{AF07F051-9D08-44A7-8C63-9296ADFEDDD7}\InprocServer32" "ThreadingModel" "Both"
+  ExecWait '"regsvr32" /s "$INSTDIR\STLThumbWinShellExtension.dll"'
+  WriteRegStr HKCR ".stl\shellex\{e357fccd-a995-4576-b01f-234630154e96}" "" "{AF07F051-9D08-44A7-8C63-9296ADFEDDD7}"
+  WriteRegStr HKCR "CLSID\{AF07F051-9D08-44A7-8C63-9296ADFEDDD7}" "" "STLThumbWinShellExtension.STLThumbnailProvider Class"
+  WriteRegDWORD HKCR "CLSID\{AF07F051-9D08-44A7-8C63-9296ADFEDDD7}" "DisableProcessIsolation" 1
+  WriteRegStr HKCR "CLSID\{AF07F051-9D08-44A7-8C63-9296ADFEDDD7}\InprocServer32" "" "$INSTDIR\STLThumbWinShellExtension.dll"
+  WriteRegStr HKCR "CLSID\{AF07F051-9D08-44A7-8C63-9296ADFEDDD7}\InprocServer32" "ThreadingModel" "Apartment"
 SectionEnd
 
 Section "-Add to path"
@@ -936,11 +937,11 @@ Section "Un.${APP_NAME}"
 !endif
 
   ; Remove stl thumb
-  ; ExecWait '"regsvr32" /s /u "$INSTDIR\STLThumbWinShellExtension.dll"'
-  ; Delete "$INSTDIR\stl-thumb.exe"
-  ; Delete "$INSTDIR\STLThumbWinShellExtension.dll"
-  ; DeleteRegKey HKCR ".stl\shellex\{e357fccd-a995-4576-b01f-234630154e96}"
-  ; DeleteRegKey HKCR "CLSID\{AF07F051-9D08-44A7-8C63-9296ADFEDDD7}"
+   ExecWait '"regsvr32" /s /u "$INSTDIR\STLThumbWinShellExtension.dll"'
+   Delete "$INSTDIR\stl-thumb.exe"
+   Delete "$INSTDIR\STLThumbWinShellExtension.dll"
+   DeleteRegKey HKCR ".stl\shellex\{e357fccd-a995-4576-b01f-234630154e96}"
+   DeleteRegKey HKCR "CLSID\{AF07F051-9D08-44A7-8C63-9296ADFEDDD7}"
 
   ;Remove the uninstaller itself.
   Delete "$INSTDIR\@CPACK_NSIS_UNINSTALL_NAME@.exe"

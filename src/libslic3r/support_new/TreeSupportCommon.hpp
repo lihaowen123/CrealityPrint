@@ -87,6 +87,8 @@ struct TreeSupportMeshGroupSettings {
         this->support_tree_top_rate = 30; // percent
     //    this->support_tree_tip_diameter = this->support_line_width;
         this->support_tree_tip_diameter = std::clamp(scaled<coord_t>(tree_support_tip_diameter), (coord_t)0, this->support_tree_branch_diameter);
+
+        this->minimum_roof_area = scaled<double>(scaled<double>(config.support_interface_min_area.value));
     }
 
 /*********************************************************************/

@@ -123,6 +123,11 @@ public:
     bool bbl_slider_float(const std::string &label, float* v, float v_min, float v_max, const char* format = "%.3f", float power = 1.0f, bool clamp = true, const wxString& tooltip = {});
     bool bbl_slider_float_style(const std::string &label, float* v, float v_min, float v_max, const char* format = "%.3f", float power = 1.0f, bool clamp = true, const wxString& tooltip = {});
 
+    /* dragable window */
+    void set_draggable_window_pos(float x, float y, int flag, float pivot_x, float pivot_y, bool force = false);
+    bool begin_with_drag(const std::string& name, int flags = 0);
+    bool begin_with_drag(const wxString& name, int flags = 0);
+
     bool begin(const std::string &name, int flags = 0);
     bool begin(const wxString &name, int flags = 0);
     bool begin(const std::string& name, bool* close, int flags = 0);
@@ -377,6 +382,15 @@ private:
     ImFont* bold_font = nullptr;
     std::map<std::string, ImFont*> im_fonts_map;
     std::vector<std::string> m_fonts_names;
+
+ private:
+    bool   m_is_dragging{false};
+    ImVec2 m_last_drag_pos;
+    ImVec2 m_window_pos;
+    int    m_flag;
+    float  m_pivot_x;
+    float  m_pivot_y;
+    bool m_is_drag_initialized {false};
 };
 
 class IMTexture

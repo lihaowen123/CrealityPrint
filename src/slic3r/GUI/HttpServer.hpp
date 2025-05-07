@@ -96,6 +96,7 @@ public:
     private:
         std::string m_http_response;
     };
+   
     class ResponseRedirect : public Response
     {
         const std::string location_str;
@@ -117,7 +118,11 @@ public:
     int get_port() { return port; }
     static std::shared_ptr<Response> bbl_auth_handle_request(const std::string& url);
     static std::shared_ptr<Response> creality_handle_request(const std::string& url);
-
+    #if defined(__linux__) || defined(__LINUX__)
+    void sendFrame(const boost::system::error_code &ec,boost::asio::ip::tcp::socket &socket);
+    std::mutex frame_mutex_;
+    bool mjpeg_server_started = false;
+    #endif
 private:
     class IOServer
     {
@@ -140,6 +145,7 @@ private:
     std::unique_ptr<IOServer> server_{nullptr};
 
     std::function<std::shared_ptr<Response>(const std::string&)> m_request_handler{&HttpServer::creality_handle_request};
+
 };
 
 class session : public std::enable_shared_from_this<session>
@@ -153,10 +159,19 @@ class session : public std::enable_shared_from_this<session>
     void read_first_line();
     void read_next_line();
     void read_body();
-
+#if defined(__linux__) || defined(__LINUX__)
+    void sendFrame(const boost::system::error_code &ec,boost::asio::ip::tcp::socket &socket);
+#endif
+private:
+    boost::asio::deadline_timer *m_video_timer=nullptr;
 public:
-    session(HttpServer::IOServer& server, boost::asio::ip::tcp::socket socket) : server(server), socket(std::move(socket)) {}
-
+    session(HttpServer::IOServer& server, boost::asio::ip::tcp::socket socket) : server(server), socket(std::move(socket)) {
+        
+    }
+    ~session() {
+        if(m_video_timer)
+            delete m_video_timer;
+    }
     void start();
     void stop();
 };

@@ -4,6 +4,7 @@
 #include "GLGizmoBase.hpp"
 #include "GLGizmosCommon.hpp"
 #include "libslic3r/Model.hpp"
+#include "../Selection.hpp"
 
 namespace Slic3r {
 
@@ -44,17 +45,20 @@ public:
     void set_enable(bool enable) { m_enable = enable; }
     bool get_enable() { return m_enable; }
     MeshBooleanSelectingState get_selecting_state() { return m_selecting_state; }
-    void set_src_volume(ModelVolume* mv) { 
-        m_src.mv = mv;
-        if (m_src.mv == m_tool.mv)
-            m_tool.reset();
-    }
-    void set_tool_volume(ModelVolume* mv) { 
-        m_tool.mv = mv;
-        if (m_tool.mv == m_src.mv)
-            m_src.reset();
-    }
+    // void set_src_volume(ModelVolume* mv) { 
+    //     m_src.mv = mv;
+    //     if (m_src.mv == m_tool.mv)
+    //         m_tool.reset();
+    // }
+    // void set_tool_volume(ModelVolume* mv) { 
+    //     m_tool.mv = mv;
+    //     if (m_tool.mv == m_src.mv)
+    //         m_src.reset();
+    // }
+    void set_src_volume(ModelVolume* mv);
+    void set_tool_volume(ModelVolume* mv);
 
+    bool is_selection_valid(const Selection& selection);
     bool gizmo_event(SLAGizmoEventType action, const Vec2d &mouse_position, bool shift_down, bool alt_down, bool control_down);
 
     /// <summary>
@@ -64,7 +68,9 @@ public:
     /// <param name="mouse_event">Keep information about mouse click</param>
     /// <returns>Return True when use the information and don't want to
     /// propagate it otherwise False.</returns>
-    bool on_mouse(const wxMouseEvent &mouse_event) override;
+    bool         on_mouse(const wxMouseEvent& mouse_event) override;
+
+    void handle_object_list_changed(Selection& selection, bool& needUpdate);
 
 protected:
     virtual bool on_init() override;
@@ -86,6 +92,8 @@ private:
     bool m_inter_delete_input = false;
     VolumeInfo m_src;
     VolumeInfo m_tool;
+
+    int m_current_obj_idx{ -1 };
 
     void generate_new_volume(bool delete_input, const TriangleMesh& mesh_result);
 };

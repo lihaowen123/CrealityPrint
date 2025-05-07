@@ -1858,9 +1858,18 @@ std::map<ObjectID, unsigned int> getObjectExtruderMap(const Print& print) {
     return objectExtruderMap;
 }
 
+// PreSlice for select is need support
+
+bool Print::PreSliceForDetermineSupport(long long* time_cost_with_cache, bool use_cache) {
+
+    return false;
+}
+
 // Slicing process, running at a background thread.
 void Print::process(long long *time_cost_with_cache, bool use_cache)
 {
+    BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << " start memory info " << log_memory_info();
+    DEFINE_PERFORMANCE_TEST("Slicing & G-code generation");
     long long start_time = 0, end_time = 0;
     if (time_cost_with_cache)
         *time_cost_with_cache = 0;
@@ -1868,7 +1877,7 @@ void Print::process(long long *time_cost_with_cache, bool use_cache)
     name_tbb_thread_pool_threads_set_locale();
 
     //compute the PrintObject with the same geometries
-    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": this=%1%, enter, use_cache=%2%, object size=%3%")%this%use_cache%m_objects.size();
+    BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << boost::format(": this=%1%, enter, use_cache=%2%, object size=%3%")%this%use_cache%m_objects.size();
     if (m_objects.empty())
         return;
 
@@ -1967,8 +1976,8 @@ void Print::process(long long *time_cost_with_cache, bool use_cache)
         }
     }
 
-    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": total object counts %1% in current print, need to slice %2%")%m_objects.size()%need_slicing_objects.size();
-    BOOST_LOG_TRIVIAL(info) << "Starting the slicing process." << log_memory_info();
+    BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << boost::format(": total object counts %1% in current print, need to slice %2%")%m_objects.size()%need_slicing_objects.size();
+    BOOST_LOG_TRIVIAL(error) << "Starting the slicing process." << log_memory_info();
     if (!use_cache) {
         for (PrintObject *obj : m_objects) {
             if (need_slicing_objects.count(obj) != 0) {
@@ -2011,6 +2020,7 @@ void Print::process(long long *time_cost_with_cache, bool use_cache)
             }
         }
 
+        BOOST_LOG_TRIVIAL(error) << "generate_support_material " << " start memory info " << log_memory_info();
         tbb::parallel_for(tbb::blocked_range<int>(0, int(m_objects.size())),
             [this, need_slicing_objects](const tbb::blocked_range<int>& range) {
                 for (int i = range.begin(); i < range.end(); i++) {
@@ -2025,6 +2035,9 @@ void Print::process(long long *time_cost_with_cache, bool use_cache)
                 }
             }
         );
+        BOOST_LOG_TRIVIAL(error) << "generate_support_material "
+                                 << " end memory info " << log_memory_info();
+
 
         for (PrintObject* obj : m_objects) {
             if (need_slicing_objects.count(obj) != 0) {
@@ -2199,7 +2212,7 @@ void Print::process(long long *time_cost_with_cache, bool use_cache)
         }
     }
     // TODO adaptive layer height won't work with conflict checker because m_fake_wipe_tower's path is generated using fixed layer height
-    if(!m_no_check && !has_adaptive_layer_height)
+    if(!m_no_check /*&& !has_adaptive_layer_height*/)
     {
         using Clock                 = std::chrono::high_resolution_clock;
         auto            startTime   = Clock::now();
@@ -2220,6 +2233,7 @@ void Print::process(long long *time_cost_with_cache, bool use_cache)
     }
 
     BOOST_LOG_TRIVIAL(info) << "Slicing process finished." << log_memory_info();
+    BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << " end memory info " << log_memory_info();
 }
 
 // G-code export process, running at a background thread.
@@ -2230,6 +2244,8 @@ std::string Print::export_gcode(const std::string& path_template, GCodeProcessor
 {
     // output everything to a G-code file
     // The following call may die if the filename_format template substitution fails.
+    BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << " start ";
+
     std::string path = this->output_filepath(path_template);
     std::string message;
     if (!path.empty() && result == nullptr) {
@@ -2239,6 +2255,7 @@ std::string Print::export_gcode(const std::string& path_template, GCodeProcessor
         message += path;
     } else
         message = L("Generating G-code");
+    //DEFINE_PERFORMANCE_TEST("Generating G-code 80%");
     this->set_status(80, message);
 
     // The following line may die for multiple reasons.
@@ -2248,8 +2265,41 @@ std::string Print::export_gcode(const std::string& path_template, GCodeProcessor
     gcode.set_gcode_offset(origin(0), origin(1));
     gcode.do_export(this, path.c_str(), result, thumbnail_cb);
 
+#if AUTOMATION_TOOL
+    if (AutomationMgr::enabled()) {
+
+        // 导出confi配置到指定目录
+        std::string full_config;
+        GCode::append_full_config(*this, full_config);
+        std::string fileDir = Slic3r::data_dir() + "/automation/config/";
+        if (!fs::exists(fileDir)) {
+            fs::create_directories(fileDir);
+        }
+        std::string   fileName               = AutomationMgr::getFileName();
+        std::string   uniqueFilename         = AutomationMgr::generateUniqueFilename(fileDir, fileName, ".config");
+        std::string   automation_config_path = fileDir + uniqueFilename;
+        std::ofstream logFile(automation_config_path, std::ios::app);
+        logFile << full_config << std::endl;
+        logFile.close();
+
+        // 导出gcode到指定目录
+        std::string automation_path = Slic3r::data_dir() + "/automation/gcode";
+
+        if (!fs::exists(automation_path)) {
+            fs::create_directories(automation_path);
+        }
+        std::string filename      = AutomationMgr::getFileName();
+        std::string gcodeFilename = AutomationMgr::generateUniqueFilename(automation_path, filename, ".gcode");
+        std::string gcodePath     = automation_path + "/" + gcodeFilename;
+        gcode.do_export(this, gcodePath.c_str(), result, thumbnail_cb);
+    }
+
+#endif
+
+
     //BBS
     result->conflict_result = m_conflict_result;
+    BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << " end";
 
     return path.c_str();
 }
@@ -3159,6 +3209,10 @@ std::string PrintStatistics::finalize_output_path(const std::string &path_in) co
  // Returns scaling for each axis representing shrinkage compensations in each axis.
 Vec3d Print::shrinkage_compensation() const
 {
+#ifdef CLOUD_SKIP_MESHBOOLEAN
+    return Vec3d::Ones();
+#else
+
     if (!this->has_same_shrinkage_compensations())
         return Vec3d::Ones();
 
@@ -3171,6 +3225,7 @@ Vec3d Print::shrinkage_compensation() const
     const double z_compensation  = 100.0 / z_shrinkage_percent;
 
     return { xy_compensation, xy_compensation, z_compensation };
+#endif
 }
 
 const std::string PrintStatistics::FilamentUsedG     = "filament used [g]";

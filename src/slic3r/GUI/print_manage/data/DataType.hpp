@@ -20,7 +20,7 @@ namespace DM{
         int         state;
         int         selected;
         int         editStatus;
-
+        std::string userMaterial;
         bool operator==(const Material& other) const;
         bool operator!=(const Material& other) const;
 

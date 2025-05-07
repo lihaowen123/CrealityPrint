@@ -660,6 +660,8 @@ set(SLIC3R_GUI_SOURCES
 	GUI/CommunicateWithCXCloud.cpp
 	GUI/UpdateParams.hpp
 	GUI/UpdateParams.cpp
+	GUI/LoginTip.hpp
+	GUI/LoginTip.cpp
     Config/OptionConfig.h
     Config/OptionConfig.cpp
 )
@@ -716,7 +718,9 @@ target_link_libraries(libslic3r_gui libslic3r cereal::cereal imgui imguizmo mini
 if(WIN32)
     target_link_libraries(libslic3r_gui iphlpapi)
 endif()
-
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    target_link_libraries(libslic3r_gui webrtc_video)
+endif()
 if (MSVC)
     target_link_libraries(libslic3r_gui Setupapi.lib)
 elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")

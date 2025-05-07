@@ -610,11 +610,12 @@ void ConfigManipulation::toggle_print_fff_options(DynamicPrintConfig *config, co
         "support_interface_pattern", "support_interface_top_layers", "support_interface_bottom_layers",
         "bridge_no_support", "max_bridge_length", "support_top_z_distance", "support_bottom_z_distance",
         "support_type", "support_on_build_plate_only", "support_critical_regions_only","support_interface_not_for_body",
-        "support_object_xy_distance", "independent_support_layer_height","minimum_support_area","support_xy_overrides_z","ironing_support_layer","tree_hybrid_cross_height","support_object_first_layer_gap","raft_first_layer_density","raft_first_layer_expansion","tree_support_wall_count","tree_support_wall_count_tree","bridge_no_support","raft_layers","support_remove_small_overhang"})
+        "support_object_xy_distance", "independent_support_layer_height","minimum_support_area","support_xy_overrides_z","ironing_support_layer","tree_hybrid_cross_height","support_object_first_layer_gap","raft_first_layer_density","raft_first_layer_expansion","tree_support_wall_count","tree_support_wall_count_tree","bridge_no_support","raft_layers","support_remove_small_overhang","support_interface_min_area"})
         toggle_field(el, have_support_material);
     toggle_field("support_threshold_angle", have_support_material && is_auto(support_type));
-    toggle_field("support_base_pattern_tree", have_support_material && is_tree(support_type));
-    toggle_field("support_base_pattern", have_support_material && support_style != smsTreeOrganic);
+    toggle_field("support_base_pattern_tree", have_support_material && is_tree(support_type) && support_style != smsTreeOrganic);
+    toggle_field("support_base_pattern", have_support_material && support_style != smsTreeOrganic && support_style != smsTreeSlim && support_style !=smsTreeStrong);
+    toggle_field("tree_support_wall_count", have_support_material && support_style != smsTreeOrganic && support_style != smsTreeSlim && support_style !=smsTreeStrong);
     //toggle_field("support_closing_radius", have_support_material && support_style == smsSnug);
     
     bool support_is_tree = config->opt_bool("enable_support") && is_tree(support_type);

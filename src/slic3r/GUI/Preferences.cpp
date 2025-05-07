@@ -342,7 +342,16 @@ wxBoxSizer *PreferencesDialog::create_item_region_combobox(wxString title, wxWin
         }
 
         wxGetApp().update_publish_status();
-        this->notify_preferences_changed();
+        
+        #ifdef __APPLE__
+            this->notify_preferences_changed();
+        #else
+            wxGetApp().reload_homepage();
+        #endif
+        CallAfter([this,region] {
+            wxGetApp().send_app_message("region|" + region.ToStdString(),true);
+         });
+        
         e.Skip();
     });
 
@@ -653,6 +662,8 @@ wxBoxSizer* PreferencesDialog::create_item_darkmode_checkbox(wxString title, wxW
         app_config->set(param, checkbox->GetValue() ? "1" : "0");
         app_config->save();
         wxGetApp().Update_dark_mode_flag();
+        
+        
 // 
 //         //dark mode
 #ifdef _MSW_DARK_MODE
@@ -663,6 +674,9 @@ wxBoxSizer* PreferencesDialog::create_item_darkmode_checkbox(wxString title, wxW
         //DM::AppMgr::Ins().SystemThemeChanged();
         SimpleEvent evt = SimpleEvent(EVT_GLCANVAS_COLOR_MODE_CHANGED);
         wxPostEvent(wxGetApp().plater(), evt);
+        CallAfter([this,checkbox] {
+            wxGetApp().send_app_message(std::string("dark_mode|") + (checkbox->GetValue() ? "1" : "0"),true);
+         });
         e.Skip();
         });
 
@@ -744,6 +758,62 @@ wxBoxSizer *PreferencesDialog::create_item_checkbox(wxString title, wxWindow *pa
     checkbox_title->SetMinSize(wxSize(size.x + FromDIP(5), -1));
     checkbox_title->Wrap(-1);
     m_sizer_checkbox->Add(checkbox_title, 0, wxALIGN_CENTER | wxALL, 3);
+
+    if (param == "user_exp") {
+        wxPanel* panel = new wxPanel(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0);
+        //panel->SetBackgroundColour(DESIGN_GRAY400_COLOR); // 设置面板背景颜色
+        bool     is_dark = Slic3r::GUI::wxGetApp().dark_mode();
+        wxColour color   = is_dark ? wxColor("#4b4b4d") : wxColour(255, 255, 255);
+
+        wxString text = _L("(Content of the collected data)");
+        wxBitmap   bitmap(1, 1);
+        wxMemoryDC dc;
+        dc.SelectObject(bitmap);
+        dc.SetBackground(color);        
+        dc.SetBackgroundMode(wxBRUSHSTYLE_TRANSPARENT); 
+        dc.SetFont(::Label::Body_13);
+        dc.SetTextForeground(*wxBLUE);
+        wxCoord w, h;
+        dc.GetTextExtent(text, &w, &h);
+        bitmap.Create(w, h, wxBITMAP_SCREEN_DEPTH);
+        dc.SelectObject(wxNullBitmap);
+        dc.SelectObject(bitmap);
+        dc.Clear();
+        dc.DrawText(text, 0, 0);
+
+        wxStaticBitmap* bitmapCtrl = new wxStaticBitmap(panel, wxID_ANY, bitmap, wxDefaultPosition, wxDefaultSize);
+        bitmapCtrl->Bind(wxEVT_LEFT_UP, [=](wxMouseEvent& event) {
+            std::string url = "https://wiki.creality.com/en/software/6-0/privacy";
+            if (wxGetApp().app_config->get("language").find("zh")==0) {
+                 url = "https://wiki.creality.com/zh/software/6-0/privacy"; 
+            }
+            wxGetApp().open_browser_with_warning_dialog(url);
+            event.Skip();
+        });
+
+        // 将位图控件添加到面板中
+        wxBoxSizer* sizer = new wxBoxSizer(wxHORIZONTAL);
+        sizer->Add(bitmapCtrl, 0, wxALL, 5);
+        panel->SetSizer(sizer);
+
+        m_sizer_checkbox->Add(panel, 0, wxALIGN_CENTER | wxALL, 3);
+        boost::filesystem::path device_file = boost::filesystem::path(Slic3r::data_dir()) / "privacyInfo.json";
+        std::string             version     = std::string(CREALITYPRINT_VERSION);
+        boost::nowide::ifstream t(device_file.string());
+        std::stringstream       buffer;
+        buffer << t.rdbuf();
+
+       json privacyData = json::parse(buffer);
+        if (privacyData.contains("list")) {
+            for (auto& v : privacyData["list"]) {
+                if (v["version"] == version) {
+                    checkbox->SetValue(v["check"]);
+                    break;
+                }
+            }
+        }
+    
+    }
 
 
      //// save config
@@ -1058,18 +1128,14 @@ wxBoxSizer* PreferencesDialog::create_item_role_radiobutton(wxString title, wxWi
     boxsizer->Add(checkbox_title, 0, wxALIGN_CENTER | wxALL, 3);
     auto basic_radio = new wxRadioButton(parent, wxID_ANY, _L("Basic"), wxDefaultPosition, wxDefaultSize, wxRB_GROUP);
     basic_radio->SetValue(app_config->get("role_type") == "0");
-    wxFont basic_font = basic_radio->GetFont();
-    basic_font.SetPointSize(9);
-    basic_radio->SetFont(basic_font);
+    basic_radio->SetFont(::Label::Body_13);
     basic_radio->Bind(wxEVT_RADIOBUTTON, [&](wxCommandEvent& event) {
         app_config->set("role_type", "0");
         Slic3r::GUI::wxGetApp().save_mode(comSimple, !app_config->has("user_mode"));
     });
     auto professional_radio = new wxRadioButton(parent, wxID_ANY, _L("Professional"), wxDefaultPosition, wxDefaultSize);
     professional_radio->SetValue(app_config->get("role_type") == "1");
-    wxFont professional_font = professional_radio->GetFont();
-    professional_font.SetPointSize(9);
-    professional_radio->SetFont(professional_font);
+    professional_radio->SetFont(::Label::Body_13);
     professional_radio->Bind(wxEVT_RADIOBUTTON, [&](wxCommandEvent& event) {
         app_config->set("role_type", "1");
         Slic3r::GUI::wxGetApp().save_mode(comAdvanced, !app_config->has("user_mode"));
@@ -1091,18 +1157,14 @@ wxBoxSizer* PreferencesDialog::create_default_page_radiobutton(wxString title, w
     boxsizer->Add(checkbox_title, 0, wxALIGN_CENTER | wxALL, 3);
     auto basic_radio = new wxRadioButton(parent, wxID_ANY, _L("Home"), wxDefaultPosition, wxSize(FromDIP(75), -1), wxRB_GROUP);
     basic_radio->SetValue(app_config->get("default_page") == "0");
-    wxFont home_font = basic_radio->GetFont();
-    home_font.SetPointSize(9);
-    basic_radio->SetFont(home_font);
+    basic_radio->SetFont(::Label::Body_13);
     basic_radio->Bind(wxEVT_RADIOBUTTON, [&](wxCommandEvent& event) {
         app_config->set("default_page", "0");
         //Slic3r::GUI::wxGetApp().save_mode(comSimple, !app_config->has("default_page"));
     });
     auto professional_radio = new wxRadioButton(parent, wxID_ANY, _L("Prepare"), wxDefaultPosition, wxSize(FromDIP(75), -1));
     professional_radio->SetValue(app_config->get("default_page") == "1");
-    wxFont professional_font = professional_radio->GetFont();
-    professional_font.SetPointSize(9);
-    professional_radio->SetFont(professional_font);
+    professional_radio->SetFont(::Label::Body_13);
     professional_radio->Bind(wxEVT_RADIOBUTTON, [&](wxCommandEvent& event) {
         app_config->set("default_page", "1");
         //Slic3r::GUI::wxGetApp().save_mode(comAdvanced, !app_config->has("default_page"));
@@ -1296,6 +1358,9 @@ wxWindow* PreferencesDialog::create_general_page()
     auto sizer_radio       = create_item_role_radiobutton(_L("User Role"), page);
     auto item_user_sync    = create_item_checkbox(_L("Auto sync user presets(Printer/Filament/Process)"), page, _L("User Sync"), 50,
                                                   "sync_user_preset");
+    auto item_user_exp    = create_item_checkbox(_L("User Experience Program"), page, _L("User Experience Program"), 50,
+                                                  "user_exp");
+    //item_user_exp->
     auto item_save_presets = create_item_button(_L("Clear my choice on the unsaved presets."), _L("Clear"), page, L"", _L("Clear my choice on the unsaved presets."), []() {
         wxGetApp().app_config->set("save_preset_choise", "");
     });
@@ -1336,13 +1401,16 @@ wxWindow* PreferencesDialog::create_general_page()
     sizer_page->Add(item_arrange, 0, wxTOP, FromDIP(3));
     sizer_page->AddSpacer(FromDIP(10));
     sizer_page->Add(sizer_radio, 0, wxTOP, FromDIP(3));
-    sizer_page->AddSpacer(FromDIP(20));
+    sizer_page->AddSpacer(FromDIP(10));
     sizer_page->Add(item_default_page, 0, wxTOP, FromDIP(3));
-    sizer_page->AddSpacer(FromDIP(20));
+    sizer_page->AddSpacer(FromDIP(10));
     sizer_page->Add(item_user_sync, 0, wxTOP, FromDIP(3));
-    sizer_page->AddSpacer(FromDIP(20));
+    sizer_page->AddSpacer(FromDIP(10));
+    sizer_page->Add(item_user_exp, 0, wxTOP, FromDIP(3));
+    sizer_page->AddSpacer(FromDIP(5));
+    
     sizer_page->Add(item_save_presets, 0, wxTOP, FromDIP(3));
-    sizer_page->AddSpacer(FromDIP(20));
+    sizer_page->AddSpacer(FromDIP(5));
     sizer_page->Add(item_save_choise, 0, wxTOP, FromDIP(3));
 
     page->SetSizer(sizer_page);
@@ -1620,7 +1688,6 @@ void PreferencesDialog::notify_preferences_changed()
         return;
 
     std::vector<wxString> prefs;
-
     wxString strlang = wxGetApp().current_language_code_safe();
     std::string country_code = app_config->get("region");
     std::string use_inches   = app_config->get("use_inches");

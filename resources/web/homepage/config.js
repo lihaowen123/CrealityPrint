@@ -1,49 +1,29 @@
-window.configDev = {
-    china: {
-        apiAddress: '/china',
-        // apiAddress: 'https://api.crealitycloud.cn',
-        websiteAddress: 'https://www.crealitycloud.cn'
-    },
-    oversea: {
-        apiAddress: '/oversea',
-        // apiAddress: 'https://api.crealitycloud.com',
-        websiteAddress: 'https://www.crealitycloud.com',
-        accountCenter: {
-            address: 'https://id.creality.com',
-            client_id: 'f9c302ecc29c59a0a6e921ff39a073ca',
-            redirect_uri: 'https://www.crealitycloud.com/oauth'
-        }
+// 罗列出所有全局变量
+window.$cxy = {
+    token: '',
+    userId: '',
+    lang: 0,
+    // 默认 dev + china
+    apiAddress: '/cxy-api-dev-cn',
+    websiteAddress: 'https://www.crealitycloud.cn',
+    accountCenter: {
+        address: '',
+        client_id: '',
+        redirect_uri: ''
     }
 };
 
-window.configAlpha = {
-    china: {
-        apiAddress: 'https://admin-pre.crealitycloud.cn',
-        websiteAddress: 'https://pre.crealitycloud.cn'
-    },
-    oversea: {
-        apiAddress: 'https://admin-pre.crealitycloud.com',
-        websiteAddress: 'https://pre.crealitycloud.com',
-        accountCenter: {
-            address: 'https://id-pre.creality.com/connect',
-            client_id: '275d77a3cc5059089a6d39c9292de38b',
-            redirect_uri: 'https://admin-pre.crealitycloud.com/oauth'
-        }
-    }
+window.$t = {};
+
+window.$message = {};
+
+window.$getColor = () => {
+    return {};
 };
 
-window.configBeta = window.configRelease = {
-    china: {
-        apiAddress: 'https://api.crealitycloud.cn',
-        websiteAddress: 'https://www.crealitycloud.cn'
-    },
-    oversea: {
-        apiAddress: 'https://api.crealitycloud.com',
-        websiteAddress: 'https://www.crealitycloud.com',
-        accountCenter: {
-            address: 'https://id.creality.com',
-            client_id: 'f9c302ecc29c59a0a6e921ff39a073ca',
-            redirect_uri: 'https://www.crealitycloud.com/oauth'
-        }
-    }
-};
+window.$showLoading = () => {};
+window.$hideLoading = () => {};
+
+window.$cppManager = {};
+
+window.config = { debug: false };

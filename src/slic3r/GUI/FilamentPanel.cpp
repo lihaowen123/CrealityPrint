@@ -22,6 +22,7 @@
 #include "slic3r/GUI/print_manage/PrinterBoxFilamentPanel.hpp"
 #include <cstdint> 
 #include "print_manage/data/DataCenter.hpp"
+#include "LoginTip.hpp"
 
 
 static bool ShouldDark(const wxColour& bgColor)
@@ -190,7 +191,8 @@ void FilamentButton::update_child_button_size()
     m_child_button->SetSize(wxSize(childButtonWidth, childButtonHeight));
     m_child_button->SetPosition(wxPoint(childButtonX, childButtonY));
 
-    m_bitmap = create_scaled_bitmap("switch_cfs_tip", nullptr, FromDIP(16));
+    m_bitmap = create_scaled_bitmap("switch_cfs_tip", this, 16);
+    Refresh();      // 强制重绘
 }
 
 void FilamentButton::OnChildButtonClick(wxMouseEvent& event)
@@ -378,7 +380,11 @@ void FilamentButton::doRender(wxDC& dc)
 	if (!m_label.IsEmpty()) {
         int width, height;
         wxFont basic_font = dc.GetFont();
+    #ifdef TARGET_OS_MAC
+         basic_font.SetPointSize(FromDIP(10));
+    #else
         basic_font.SetPointSize(8);
+    #endif
         dc.SetFont(basic_font);
 
         dc.GetTextExtent(m_label, &width, &height);
@@ -455,7 +461,12 @@ void FilamentButton::doRender(wxDC& dc)
                 m_pFilamentItem->resetCFS(true);
                 }
             });
-
+#ifdef __APPLE__
+        m_filamentCombox->Bind(wxEVT_COMBOBOX_CLOSEUP, [this](wxCommandEvent& event) {
+            this->Dismiss();
+            event.Skip();
+        });
+#endif
 		// filament combox
         wxSizerItem* item = m_sizer_main->Add(m_filamentCombox, 1, wxUP | wxDOWN | wxRIGHT, 1);
         item->SetProportion(wxEXPAND);
@@ -486,7 +497,7 @@ void FilamentButton::doRender(wxDC& dc)
             sz->Add(m_lb_extruderTemp, 0, wxALIGN_CENTER_VERTICAL);
             sz->Add(exTemp, 0, wxALIGN_CENTER_VERTICAL | wxLEFT | wxRIGHT, FromDIP(5));
 
-            m_sizer_main->Add(box, 0, wxRIGHT | wxUP | wxDOWN, 1);
+            m_sizer_main->Add(box, 1, wxEXPAND | wxRIGHT | wxUP | wxDOWN, 1);
 
             m_lb_extruderTemp->Bind(wxEVT_TEXT_ENTER, [](wxCommandEvent& event) {
                 wxString newText   = event.GetString();
@@ -529,7 +540,7 @@ void FilamentButton::doRender(wxDC& dc)
             sz->Add(m_lb_bedTemp, 0, wxALIGN_CENTER_VERTICAL);
             sz->Add(bedLabel, 0, wxALIGN_CENTER_VERTICAL | wxLEFT | wxRIGHT, FromDIP(5));
 
-            m_sizer_main->Add(box, 0, wxRIGHT | wxUP | wxDOWN, 1);
+            m_sizer_main->Add(box, 1, wxEXPAND | wxUP | wxDOWN, 1);
             m_lb_bedTemp->Bind(wxEVT_TEXT_ENTER, [](wxCommandEvent& event) {
                 wxString newText   = event.GetString();
                 // 在这里处理文本内容修改的逻辑
@@ -786,7 +797,6 @@ FilamentItem::FilamentItem(wxWindow* parent, const Data& data, const wxSize& siz
 	//update filament type.
 	m_popPanel->Bind(wxEVT_COMBOBOX, [this](wxCommandEvent& e) { 
 		Slic3r::GUI::wxGetApp().sidebar().GetEventHandler()->ProcessEvent(e);
-        m_popPanel->Dismiss();
 		});
 }
 
@@ -1121,6 +1131,16 @@ void FilamentPanel::reset_filament_sync_state()
 void FilamentPanel::resetFilamentToCFS() {
     for (auto& item : this->m_vt_filament) {
         item->resetCFS(true);
+    }
+}
+
+void FilamentPanel::updateLastFilament(const std::vector<std::string>& presetName)
+{
+    int i = 0;
+    for (auto& item : this->m_vt_filament) {
+        if (i >= presetName.size())
+            break;
+        item->set_filament_selection(from_u8(presetName[i++]));
     }
 }
 
@@ -1623,16 +1643,36 @@ void FilamentPanel::on_auto_mapping_filament(const DM::Device& deviceData)
 
 	// sychronize normal multi-color box first, and then extra box
 	int normalIdx = 0;  
+    LoginTip::getInstance().resetHasSkipToLogin();
 	for(int i = 0; i < validMaterials.size(); i++)
 	{
         auto& item = m_vt_filament[normalIdx];
-        item->update_bk_color(validMaterials[i].second.color);
-        item->set_filament_selection(validMaterials[i].second.name);
+        int   filamentUserMaterialRet = 0; // 1:不是用户预设, 0:是用户预设，且用户账号正常, wxID_YES:点击了登录
+        filamentUserMaterialRet       = LoginTip::getInstance().isFilamentUserMaterialValid(validMaterials[i].second.userMaterial);
+        if (filamentUserMaterialRet == (int) wxID_YES) { //  点击了登录
+            continue;
+        }
+
+        std::string new_filament_color = validMaterials[i].second.color;
+        std::string new_filament_name  = validMaterials[i].second.name;
 
         char     index_char          = 'A' + (validMaterials[i].second.material_id % 4); // Calculate the letter part (A, B, C, D)
         wxString material_sync_label = wxString::Format("%d%c", validMaterials[i].first, index_char);
+
+        if (filamentUserMaterialRet != 0 && filamentUserMaterialRet != 1 && filamentUserMaterialRet != (int) wxID_YES) {
+            new_filament_name = "";
+            material_sync_label = "";
+        } else if (filamentUserMaterialRet == 0) {
+            new_filament_name = from_u8(validMaterials[i].second.name).ToStdString();
+        }
+
+        item->update_bk_color(new_filament_color);
+        item->set_filament_selection(new_filament_name);
         item->update_box_sync_state(true, material_sync_label);
         item->resetCFS(false);
+        if (material_sync_label.empty()) {
+            item->resetCFS(true);
+        }
 
         normalIdx += 1;
     }
@@ -1656,6 +1696,9 @@ void FilamentPanel::on_sync_one_filament(int filament_index, const std::string& 
 	item->update_box_sync_state(true, sync_label);
 	item->update_box_sync_color(new_filament_color);
     item->resetCFS(false);
+    if (sync_label.empty()) {
+        item->resetCFS(true);
+    }
 
 	item->Refresh();
 }
@@ -1859,10 +1902,43 @@ BoxColorPopPanel::BoxColorPopPanel(wxWindow* parent)
 	m_mainSizer->Add(separatorLine, 0, wxEXPAND | wxALL, 0);
     m_mainSizer->Add(m_secondColumnPanel, 0, wxALL, 5);
 
+    #if __APPLE__
+        Bind(wxEVT_LEFT_DOWN, &BoxColorPopPanel::on_left_down, this); 
+     #endif
     SetSizer(m_mainSizer);
     Layout();
 }
-
+void BoxColorPopPanel::on_left_down(wxMouseEvent &evt)
+{
+   
+    auto pos = ClientToScreen(evt.GetPosition());
+    wxWindowList& children = m_secondColumnPanel->GetChildren();
+    for (wxWindowList::iterator it = children.begin(); it != children.end(); ++it) {
+        wxWindow* item = *it;
+        auto p_rect = item->ClientToScreen(wxPoint(0, 0));
+        if (pos.x > p_rect.x && pos.y > p_rect.y && pos.x < (p_rect.x + item->GetSize().x) && pos.y < (p_rect.y + item->GetSize().y)) {
+            wxCommandEvent event(wxEVT_BUTTON, GetId());
+		    event.SetEventObject(item);
+             OnSecondColumnItemClicked(event);
+             this->Dismiss();
+             //BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << "on_left_down"<<r_pos.x<<"\n";
+        }
+        
+    }
+    auto firstChildren = m_firstColumnSizer->GetChildren();
+    for(wxSizerItem* firstItem: firstChildren)
+    {   
+        wxWindow* item = firstItem->GetWindow();
+        auto p_rect = item->ClientToScreen(wxPoint(0, 0));
+        if (pos.x > p_rect.x && pos.y > p_rect.y && pos.x < (p_rect.x + item->GetSize().x) && pos.y < (p_rect.y + item->GetSize().y)) {
+            wxCommandEvent event(wxEVT_BUTTON, GetId());
+		    event.SetEventObject(item);
+            OnFirstColumnButtonClicked(event);
+             //BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << "on_left_down"<<r_pos.x<<"\n";
+        }
+    }
+    
+}
 BoxColorPopPanel::~BoxColorPopPanel()
 {
 }
@@ -2007,16 +2083,30 @@ void BoxColorPopPanel::OnSecondColumnItemClicked(wxCommandEvent& event)
 		return;
 	}
 
+    LoginTip::getInstance().resetHasSkipToLogin();
+    int filamentUserMaterialRet = 0; // 1:不是用户预设, 0:是用户预设，且用户账号正常, wxID_YES:点击了登录
+    filamentUserMaterialRet = LoginTip::getInstance().isFilamentUserMaterialValid(item->getUserMaterial());
+    if (filamentUserMaterialRet == (int)wxID_YES) {  //  点击了登录
+        return;
+    }
+
     // Perform the logic you want when an item in the second column is clicked
     // wxLogMessage("Second column item clicked");
 	wxColour item_color = item->GetColor();  // GetColor()
 	std::string new_filament_color = item_color.GetAsString(wxC2S_HTML_SYNTAX).ToStdString();
 	std::string new_filament_name = item->get_filament_name();
+    wxString syncLabel = item->get_material_index_info();
+    if (filamentUserMaterialRet != 0 && filamentUserMaterialRet != 1 && filamentUserMaterialRet != (int)wxID_YES) {
+        new_filament_name = "";
+        syncLabel         = "";
+    } else if (filamentUserMaterialRet == 0) {
+        new_filament_name = from_u8(item->get_filament_name()).ToStdString();
+    }
 
 	FilamentPanel* filament_panel = dynamic_cast<FilamentPanel*>(Slic3r::GUI::wxGetApp().sidebar().filament_panel());
 	if(filament_panel)
 	{
-		filament_panel->on_sync_one_filament(m_filament_item_index, new_filament_color, new_filament_name, item->get_material_index_info());
+		filament_panel->on_sync_one_filament(m_filament_item_index, new_filament_color, new_filament_name, syncLabel);
 	}
 }
 
@@ -2114,8 +2204,9 @@ wxString FilamentColorSelectionItem::get_filament_type_label()
 
 std::string FilamentColorSelectionItem::get_filament_name()
 {
-	return m_filament_name;
-}
+	return m_filament_name; }
+
+std::string FilamentColorSelectionItem::getUserMaterial() { return m_userMaterial; }
 
 wxString FilamentColorSelectionItem::get_material_index_info()
 {
@@ -2127,6 +2218,7 @@ void FilamentColorSelectionItem::update_item_info_by_material(int box_id, const 
     m_box_id  = box_id;
 	m_filament_type_label = material_info.type;
 	m_filament_name = material_info.name;
+    m_userMaterial = material_info.userMaterial;
     m_bk_color = RemotePrint::Utils::hex_string_to_wxcolour(material_info.color);
 	SetBackgroundColour(m_bk_color);
     char index_char    = 'A' + (material_info.material_id % 4); // Calculate the letter part (A, B, C, D)

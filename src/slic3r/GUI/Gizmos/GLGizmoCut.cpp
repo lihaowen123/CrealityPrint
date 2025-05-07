@@ -3333,6 +3333,8 @@ void GLGizmoCut3D::perform_cut(const Selection& selection)
     if (!mo)
         return;
 
+    wxGetApp().plater()->check_object_need_repair(object_idx);
+
     // deactivate CutGizmo and than perform a cut
     m_parent.reset_all_gizmos();
 

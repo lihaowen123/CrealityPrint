@@ -22,5 +22,7 @@
 #define DUMPTOOL_PASS "@DUMPTOOL_PASS@"
 #define DUMPTOOL_HOST "@DUMPTOOL_HOST@"
 #define DUMPTOOL_TO "@DUMPTOOL_TO@"
+// define automationTool
+#cmakedefine01 AUTOMATION_TOOL
 
 #endif /* __SLIC3R_VERSION_H */

@@ -3248,6 +3248,7 @@ static void handle_legacy_project_loaded(unsigned int version_project_file, Dyna
 
 bool load_3mf(const char* path, DynamicPrintConfig& config, ConfigSubstitutionContext& config_substitutions, Model* model, bool check_version)
 {
+    DEFINE_PERFORMANCE_TEST("Loading File");
     if (path == nullptr || model == nullptr)
         return false;
 

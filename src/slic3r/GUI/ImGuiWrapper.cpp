@@ -86,6 +86,7 @@ static const std::map<const wchar_t, std::string> font_icons = {
     {ImGui::FillButtonDarkIcon         , "fill_paint_dark"                    },
     {ImGui::HeightRangeDarkIcon        , "height_range_dark"                  },
     {ImGui::ConfirmDarkIcon            , "confirm_dark"                       },
+    {ImGui::ConfirmHoverDarkIcon       , "confirm_hover_dark"                 },
     {ImGui::GapFillDarkIcon            , "gap_fill_dark"                      },
     {ImGui::SphereButtonDarkIcon       , "toolbar_modifier_sphere_dark"       },
 
@@ -103,6 +104,18 @@ static const std::map<const wchar_t, std::string> font_icons = {
     {ImGui::ExpandArrowIcon,              "notification_expand"               },
     {ImGui::OpenArrowIcon,                "notification_arrow_open"           },
 };
+
+static const std::map<const wchar_t, std::string> font_icons_wide = {
+
+    // Boolean operations
+    {ImGui::UnionBooleanButton, "union_boolean"},
+    {ImGui::UnionBooleanDarkButton, "union_boolean_dark"},
+    {ImGui::IntersectionBooleanButton, "intersection_boolean"},
+    {ImGui::IntersectionBooleanDarkButton, "intersection_boolean_dark"},
+    {ImGui::DifferenceBooleanButton, "difference_boolean"},
+    {ImGui::DifferenceBooleanDarkButton, "difference_boolean_dark"},
+};
+
 static const std::map<const wchar_t, std::string> font_icons_large = {
     {ImGui::CloseNotifButton        , "notification_close"              },
     {ImGui::CloseNotifHoverButton   , "notification_close_hover"        },
@@ -783,6 +796,52 @@ bool ImGuiWrapper::bbl_slider_float(const std::string& label, float* v, float v_
 
 
     return ret;
+}
+
+void ImGuiWrapper::set_draggable_window_pos(float x, float y, int flag, float pivot_x, float pivot_y, bool force)
+{
+    if (force || !m_is_drag_initialized) 
+    {
+        m_is_drag_initialized = true;
+        m_window_pos = ImVec2(x, y);
+    }
+    m_flag = flag;
+    m_pivot_x = pivot_x;
+    m_pivot_y = pivot_y;
+}
+
+bool ImGuiWrapper::begin_with_drag(const std::string& name, int flags)
+{
+    set_next_window_pos(m_window_pos.x, m_window_pos.y, m_flag, m_pivot_x, m_pivot_y);
+    bool result = ImGui::Begin(name.c_str(), nullptr, (ImGuiWindowFlags)flags);;
+    bool dragging = false;
+    if (ImGui::IsMouseDown(ImGuiMouseButton_Left)) 
+    {
+        if (m_is_dragging) {
+            ImVec2 new_pos = ImGui::GetMousePos();
+            m_window_pos.x += (new_pos.x - m_last_drag_pos.x);
+            m_window_pos.y += (new_pos.y - m_last_drag_pos.y);
+            m_last_drag_pos = new_pos;
+        }
+        if (ImGui::IsWindowHovered()) 
+        {
+            if (!m_is_dragging) {
+                m_last_drag_pos = ImGui::GetMousePos();
+                if (m_last_drag_pos.y - m_window_pos.y < 30)
+                    m_is_dragging   = true;
+            }
+        }
+    }
+    else
+    {
+        m_is_dragging = false;
+    }
+    return result;
+}
+
+bool ImGuiWrapper::begin_with_drag(const wxString& name, int flags) 
+{ 
+    return begin_with_drag(into_u8(name), flags); 
 }
 
 bool ImGuiWrapper::begin(const std::string &name, int flags)
@@ -2754,6 +2813,10 @@ void ImGuiWrapper::init_font(bool compress)
         m_custom_glyph_rects_ids[icon.first] =
         io.Fonts->AddCustomRectFontGlyph(default_font, icon.first, icon_sz, icon_sz, 3.0 * font_scale + icon_sz);
     }
+    for (auto& icon : font_icons_wide) {
+        m_custom_glyph_rects_ids[icon.first] = 
+        io.Fonts->AddCustomRectFontGlyph(default_font, icon.first, icon_sz * 2.0, icon_sz, 3.0 * font_scale + icon_sz);
+    }
     for (auto& icon : font_icons_large) {
         m_custom_glyph_rects_ids[icon.first] =
         io.Fonts->AddCustomRectFontGlyph(default_font, icon.first, icon_sz * 2, icon_sz * 2, 3.0 * font_scale + icon_sz * 2);
@@ -2789,6 +2852,10 @@ void ImGuiWrapper::init_font(bool compress)
 
     // Fill rectangles from the SVG-icons
     for (auto icon : font_icons) {
+        load_icon_from_svg(icon, icon_sz);
+    }
+     
+    for (auto icon : font_icons_wide) {
         load_icon_from_svg(icon, icon_sz);
     }
 
@@ -2948,8 +3015,14 @@ void ImGuiWrapper::init_font_all(bool compress)
     // add rectangles for the icons to the font atlas
     for (auto& icon : font_icons) {
         m_custom_glyph_rects_ids[icon.first] = io.Fonts->AddCustomRectFontGlyph(default_font, icon.first, icon_sz, icon_sz,
+                                                                                    3.0 * font_scale + icon_sz);
+    }
+
+    for (auto& icon : font_icons_wide) {
+        m_custom_glyph_rects_ids[icon.first] = io.Fonts->AddCustomRectFontGlyph(default_font, icon.first, icon_sz * 2.0, icon_sz,
                                                                                 3.0 * font_scale + icon_sz);
     }
+
     for (auto& icon : font_icons_large) {
         m_custom_glyph_rects_ids[icon.first] = io.Fonts->AddCustomRectFontGlyph(default_font, icon.first, icon_sz * 2, icon_sz * 2,
                                                                                 3.0 * font_scale + icon_sz * 2);
@@ -2971,7 +3044,9 @@ void ImGuiWrapper::init_font_all(bool compress)
 
     auto load_icon_from_svg = [this, &io, pixels, width, &rect_id](const std::pair<const wchar_t, std::string> icon, int icon_sz) {
         if (const ImFontAtlas::CustomRect* rect = io.Fonts->GetCustomRectByIndex(rect_id)) {
-            assert(rect->Width == icon_sz);
+            //assert(rect->Width == icon_sz);
+            //assert(rect->Height == icon_sz);
+            assert(rect->Width % icon_sz == 0);
             assert(rect->Height == icon_sz);
             unsigned                   outwidth, outheight;
             std::vector<unsigned char> raw_data = load_svg(icon.second, icon_sz, icon_sz, &outwidth, &outheight);
@@ -2989,6 +3064,10 @@ void ImGuiWrapper::init_font_all(bool compress)
 
     // Fill rectangles from the SVG-icons
     for (auto icon : font_icons) {
+        load_icon_from_svg(icon, icon_sz);
+    }
+
+    for (auto& icon : font_icons_wide) {
         load_icon_from_svg(icon, icon_sz);
     }
 

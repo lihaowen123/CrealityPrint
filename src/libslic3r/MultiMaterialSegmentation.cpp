@@ -535,6 +535,7 @@ struct PaintedLineVisitor
         const Vec2d  v1                     = line_to_test.vector().cast<double>();
         const double v1_sqr_norm            = v1.squaredNorm();
         const double heuristic_thr_part     = line_to_test.length() + append_threshold;
+
         for (auto it_contour_and_segment = cell_data_range.first; it_contour_and_segment != cell_data_range.second; ++it_contour_and_segment) {
             Line        grid_line         = grid.line(*it_contour_and_segment);
             const Vec2d v2                = grid_line.vector().cast<double>();
@@ -584,7 +585,8 @@ struct PaintedLineVisitor
 
     static inline const double                                                            cos_threshold2    = Slic3r::sqr(cos(M_PI * 30. / 180.));
     static inline const double                                                            append_threshold  = 50 * SCALED_EPSILON;
-    static inline const double                                                            append_threshold2 = Slic3r::sqr(append_threshold);
+    // static inline const double                                                            append_threshold2 = Slic3r::sqr(append_threshold);
+    static inline const double                                                            append_threshold2 = Slic3r::sqr(50 * SCALED_EPSILON);
 };
 
 BoundingBox get_extents(const std::vector<ColoredLines> &colored_polygons) {
@@ -2154,6 +2156,12 @@ std::vector<std::vector<ExPolygons>> multi_material_segmentation_by_painting(con
         edge_grids[layer_idx].create(input_expolygons[layer_idx], coord_t(scale_(10.)));
     }
 
+    // BOOST_LOG_TRIVIAL(debug) << "MM segmentation - Grid - begin";
+    // for(size_t layer_idx = 0; layer_idx < num_layers; ++layer_idx) {
+    //     BOOST_LOG_TRIVIAL(debug) << "MM segmentation - Grid contours : " << edge_grids[layer_idx].contours().size();
+    // }
+    // BOOST_LOG_TRIVIAL(debug) << "MM segmentation - Grid - end";
+
     BOOST_LOG_TRIVIAL(debug) << "MM segmentation - projection of painted triangles - begin";
     for (const ModelVolume *mv : print_object.model_object()->volumes) {
         tbb::parallel_for(tbb::blocked_range<size_t>(1, num_extruders + 1), [&mv, &print_object, &layers, &edge_grids, &painted_lines, &painted_lines_mutex, &input_expolygons, &throw_on_cancel_callback](const tbb::blocked_range<size_t> &range) {
@@ -2162,6 +2170,8 @@ std::vector<std::vector<ExPolygons>> multi_material_segmentation_by_painting(con
                 const indexed_triangle_set custom_facets = mv->mmu_segmentation_facets.get_facets(*mv, EnforcerBlockerType(extruder_idx));
                 if (!mv->is_model_part() || custom_facets.indices.empty())
                     continue;
+
+                BOOST_LOG_TRIVIAL(debug) << "MM segmentation - mmu_segmentation_facets: " << custom_facets.indices.size();
 
                 const Transform3f tr = print_object.trafo().cast<float>() * mv->get_matrix().cast<float>();
                 tbb::parallel_for(tbb::blocked_range<size_t>(0, custom_facets.indices.size()), [&tr, &custom_facets, &print_object, &layers, &edge_grids, &input_expolygons, &painted_lines, &painted_lines_mutex, &extruder_idx](const tbb::blocked_range<size_t> &range) {

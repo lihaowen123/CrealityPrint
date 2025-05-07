@@ -93,8 +93,9 @@ public:
     void update_device_data(const DM::Device& device_data);
     void on_auto_device_filament_mapping();
     void on_show_box_color_selection(wxPoint popup_pos, int sync_filament_item_index);
-
     virtual bool Show(bool show = true) wxOVERRIDE;
+    bool isMultiColorDevice() const { return m_bMultiColorDevice; }
+    void setMultiColorDevice(bool bMultiColorDevice) { m_bMultiColorDevice = bMultiColorDevice; }
     void         setExactMaterialCb(std::function<void(bool)> funcExactMaterialCb) { m_funcExactMaterialCb = funcExactMaterialCb; }
 
 protected:
@@ -119,7 +120,7 @@ private:
 
     wxTimer*                  m_timer               = nullptr;
     std::function<void(bool)> m_funcExactMaterialCb = nullptr;
-
+    bool m_bMultiColorDevice = false; //
 };
 
 }

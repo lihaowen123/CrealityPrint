@@ -17,7 +17,7 @@
     "change_filament_gcode": ";switch//////////////////////////////////////////\n; Change Tool[previous_extruder] -> Tool[next_extruder] (layer [layer_num])\nG1 F800 E-[new_retract_length]\nG1 F21000\n;P0 S1 L2 D0\nT[next_extruder]\nM109 S[new_filament_temp]\n;T0 S1 L0 D0\n;switch//////////////////////////////////////////\n",
     "cooling_tube_length": "0",
     "cooling_tube_retraction": "0",
-    "default_print_profile": " @Creality Sermoon D3 Pro 0.4 nozzle",
+    "default_print_profile": "0.20mm Standard @Creality Sermoon D3 Pro 0.4 nozzle",
     "disable_m73": "1",
     "emit_machine_limits_to_gcode": "1",
     "enable_filament_ramming": "0",
@@ -115,5 +115,5 @@
     "z_hop": "0.4,0.4",
     "z_hop_types": "Slope Lift,Slope Lift",
     "name": "Creality Sermoon D3 Pro 0.4 nozzle",
-    "setting_id": "16210"
+    "setting_id": "52605"
 }

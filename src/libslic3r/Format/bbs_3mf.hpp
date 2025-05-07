@@ -325,6 +325,9 @@ extern void clear_other_changes(bool backup);
 
 extern bool has_other_changes(bool backup);
 
+extern bool check_3mf_model_config(const std::string& filename);
+
+
 class SaveObjectGaurd {
 public:
     SaveObjectGaurd(ModelObject& object);

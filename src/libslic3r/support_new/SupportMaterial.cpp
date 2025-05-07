@@ -2261,19 +2261,20 @@ SupportGeneratorLayersPtr PrintObjectSupportMaterial::top_contact_layers(
             }
 
             if (!cluster.is_sharp_tail && !cluster.is_cantilever) {
-                // 2. check overhang cluster size is small
-                cluster.is_small_overhang = false;
-                auto erode1 = offset_ex(cluster.merged_overhangs_dilated, -1.0 * fw_scaled);
-                Point bbox_sz = get_extents(erode1).size();
-                if (bbox_sz.x() < 2 * fw_scaled || bbox_sz.y() < 2 * fw_scaled) {
-                    cluster.is_small_overhang = true;
-                }
+                //// 2. check overhang cluster size is small
+                //cluster.is_small_overhang = false;
+                //auto erode1 = offset_ex(cluster.merged_overhangs_dilated, -1.0 * fw_scaled);
+                //Point bbox_sz = get_extents(erode1).size();
+                //if (bbox_sz.x() < 2 * fw_scaled || bbox_sz.y() < 2 * fw_scaled) {
+                //    cluster.is_small_overhang = true;
+                //}
 
                 // 4. check minimum support area
                 float supported_area = area(cluster.merged_overhangs_dilated);
                 if (supported_area < minimum_support_area) {
                     cluster.is_small_overhang = true;
-                }
+                } else
+                    cluster.is_small_overhang = false;
             }
 
 #ifdef SUPPORT_TREE_DEBUG_TO_SVG

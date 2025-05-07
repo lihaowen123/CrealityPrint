@@ -128,7 +128,7 @@ function build_deps() {
     echo "Building deps..."
     (
         set -x
-        mkdir -p "$DEPS"
+        mkdir -p "$DEPS_BUILD_DIR"
         cd "$DEPS_BUILD_DIR"
         if [ "1." != "$BUILD_ONLY". ]; then
             cmake .. \

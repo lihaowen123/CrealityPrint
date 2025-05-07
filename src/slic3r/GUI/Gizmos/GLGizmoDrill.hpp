@@ -156,6 +156,7 @@ private:
     bool render_combo(const std::string& label, const std::vector<std::string>& lines, int& selection_idx);
     bool render_reset_button(const std::string& label_id) const;
     void draw_cp_input_double(const std::string& label, double* v, double stride, const Vec2d& size, int flags = 0);
+
 };
 
 } // namespace GUI

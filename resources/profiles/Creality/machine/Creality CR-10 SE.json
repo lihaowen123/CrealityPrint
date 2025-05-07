@@ -3,7 +3,7 @@
     "name": "Creality CR-10 SE",
     "nozzle_diameter": "0.4",
     "bed_model": "Creality CR-10 SE_buildplate_model.stl",
-    "default_bed_type": "High Temp Plate",
+    "default_bed_type": "Textured PEI Plate",
     "bed_texture": "Creality CR-10 SE_buildplate_texture.png",
     "family": "Creality",
     "hotend_model": "",

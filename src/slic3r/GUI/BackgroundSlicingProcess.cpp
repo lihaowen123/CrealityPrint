@@ -25,6 +25,7 @@
 #include "libslic3r/libslic3r.h"
 #ifdef _WIN32
 	#include "libslic3r/UnittestFlow.hpp"
+#include "libslic3r/AutomationMgr.hpp"
 #endif
 #include <cassert>
 #include <stdexcept>
@@ -197,7 +198,9 @@ std::string BackgroundSlicingProcess::output_filepath_for_project(const boost::f
 // from the G-code generator.
 void BackgroundSlicingProcess::process_fff()
 {
-	DEFINE_PERFORMANCE_TEST("BackgroundSlicingProcess::process_fff");
+	//DEFINE_PERFORMANCE_TEST("Slicing & G-code generation");
+    BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << " start memory info " << log_memory_info();
+
 
 	assert(m_print == m_fff_print);
 	m_fff_print->set_is_BBL_printer(wxGetApp().preset_bundle->is_bbl_vendor());
@@ -205,6 +208,7 @@ void BackgroundSlicingProcess::process_fff()
 	//BBS: add the logic to process from an existed gcode file
 	if (m_print->finished()) {
 		BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(" %1%: skip slicing, to process previous gcode file") % __LINE__;
+        //DEFINE_PERFORMANCE_TEST("Processing G-Code from Previous file 80%");
 		m_fff_print->set_status(80, _utf8(L("Processing G-Code from Previous file...")));
 		wxCommandEvent evt(m_event_slicing_completed_id);
 		// Post the Slicing Finished message for the G-code viewer to update.
@@ -234,6 +238,8 @@ void BackgroundSlicingProcess::process_fff()
 		BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(" %1%: gcode_result reseted, will start print::process") % __LINE__;
 		m_print->process();
 		BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(" %1%: after print::process, send slicing complete event to gui...") % __LINE__;
+
+		// ��������
 
 		wxCommandEvent evt(m_event_slicing_completed_id);
 		// Post the Slicing Finished message for the G-code viewer to update.
@@ -265,6 +271,15 @@ void BackgroundSlicingProcess::process_fff()
 			prepare_upload();
 		}
 		else {
+#if AUTOMATION_TOOL
+			// DEFINE_PERFORMANCE_TEST("Slicing complete 100%");
+			//  export gcode to dir
+			if (AutomationMgr::enabled()) {
+				//AutomationMgr::exportGCode(m_temp_output_path);
+                //AutomationMgr::exportPrintConfigToJson(m_fff_print->model(), m_fff_print->full_print_config());
+			}
+#endif // AUTOMATION_TOOL
+
 			m_print->set_status(100, _utf8(L("Slicing complete")));
 		}
 		this->set_step_done(bspsGCodeFinalize);
@@ -299,7 +314,7 @@ void BackgroundSlicingProcess::process_fff()
 		
 	}
 	
-	
+	BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << " end memory info " << log_memory_info();
 }
 
 static void write_thumbnail(Zipper& zipper, const ThumbnailData& data)
@@ -315,6 +330,7 @@ static void write_thumbnail(Zipper& zipper, const ThumbnailData& data)
 
 void BackgroundSlicingProcess::process_sla()
 {
+    //DEFINE_PERFORMANCE_TEST(" BackgroundSlicingProcess::process_sla");
     assert(m_print == m_sla_print);
     m_print->process();
     if (this->set_step_started(bspsGCodeFinalize)) {
@@ -479,7 +495,7 @@ void BackgroundSlicingProcess::call_process(std::exception_ptr &ex) throw()
 	try {
 		assert(m_print != nullptr);
  		switch (m_print->technology()) {
-		case ptFFF: this->process_fff(); break;
+        case ptFFF: this->process_fff(); break;
 		case ptSLA: this->process_sla(); break;
 		default: m_print->process(); break;
 		}
@@ -971,6 +987,7 @@ bool BackgroundSlicingProcess::invalidate_all_steps()
 // Copy the final G-code to target location (possibly a SD card, if it is a removable media, then verify that the file was written without an error).
 void BackgroundSlicingProcess::finalize_gcode()
 {
+    //DEFINE_PERFORMANCE_TEST("Running post-processing scripts 95%");
 	m_print->set_status(95, _u8L("Running post-processing scripts"));
 
 	// Perform the final post-processing of the export path by applying the print statistics over the file name.
@@ -990,6 +1007,7 @@ void BackgroundSlicingProcess::finalize_gcode()
 				BOOST_LOG_TRIVIAL(error) << "Failed to remove temp file " << output_path << ": " << ex.what();
 			}
 	};
+    //DEFINE_PERFORMANCE_TEST("Successfully executed post-processing script 99%");
     m_print->set_status(99, _utf8(L("Successfully executed post-processing script")));
 
 	//FIXME localize the messages
@@ -1128,7 +1146,6 @@ void BackgroundSlicingProcess::prepare_upload()
 	            write_thumbnail(zipper, data);
         zipper.finalize();
     }
-
     m_print->set_status(100, (boost::format(_utf8(L("Scheduling upload to `%1%`. See Window -> Print Host Upload Queue"))) % m_upload_job.printhost->get_host()).str());
 
 	m_upload_job.upload_data.source_path = std::move(source_path);

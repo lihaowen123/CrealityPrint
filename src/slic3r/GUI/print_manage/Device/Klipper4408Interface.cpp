@@ -47,7 +47,7 @@ std::future<void> Klipper4408Interface::sendFileToDevice(const std::string& serv
     progressCallback(1.0f);
     std::string filePath =  wxString::FromUTF8(localFilePath.c_str()).ToStdString();
     http.header("Content-Type", "multipart/form-data")
-        .mime_form_add_file(temp_upload_name, filePath.c_str())
+        .mime_form_add_file(temp_upload_name, filePath.c_str()).timeout_connect(5)
         .on_complete([&](std::string body, unsigned status) {
             BOOST_LOG_TRIVIAL(debug) << boost::format("%1%: File uploaded: HTTP %2%: %3%") % uploadFileName % status % body;
             res = boost::icontains(body, "OK");

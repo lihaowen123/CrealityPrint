@@ -20,7 +20,9 @@
 #include <openssl/md5.h>
 
 #include "libslic3r.h"
-
+#ifdef _WIN32
+#include "AutomationMgr.hpp"
+#endif
 //define CLI errors
 
 #define CLI_SUCCESS                 0
@@ -150,7 +152,7 @@ void set_custom_gcodes_dir(const std::string &path);
 const std::string& custom_gcodes_dir();
 
 // Set a path with preset files.
-void set_data_dir(const std::string &path);
+void set_data_dir(const std::string &path, bool use_directly = false);
 // Return a full path to the GUI resource files.
 const std::string& data_dir();
 
@@ -459,7 +461,7 @@ public:
     void reset() { closure = Closure(); }
 };
 
-//#define PERFORMANCE_TEST
+#define PERFORMANCE_TEST
 
 #ifdef PERFORMANCE_TEST
     //define timer
@@ -474,23 +476,38 @@ class PerformanceTestTimer
 public:
 	PerformanceTestTimer(const std::string &scope_name)
     {
+        #if AUTOMATION_TOOL
         name = scope_name;
         start_time = std::chrono::high_resolution_clock::now();
+        current_start_time = AutomationMgr::getCurrentTime();
+        #endif
     }
 
     ~PerformanceTestTimer()
     {
+        #if AUTOMATION_TOOL
 		end_time = std::chrono::high_resolution_clock::now();
+        current_end_time = AutomationMgr::getCurrentTime();
 		auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
-        BOOST_LOG_TRIVIAL(warning) << "------------------------------------------";
-		BOOST_LOG_TRIVIAL(warning) << name << " scope_time " << ms << "ms";
-		flush_logs();
+
+        // if automatic test:
+        if (AutomationMgr::enabled()) {
+            auto start_time_t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now() + std::chrono::duration_cast<std::chrono::system_clock::duration>(start_time.time_since_epoch()));
+            std::tm*    timeinfo = std::localtime(&start_time_t);
+            auto        start_ms     = std::chrono::duration_cast<std::chrono::milliseconds>(start_time.time_since_epoch()).count() % 1000;
+            std::string fileName = AutomationMgr::getFileName();
+            std::string logContent   = "[fileName: " + fileName + " step: " + name + " used_time: " + std::to_string(ms) + " ms] ";
+            AutomationMgr::outputLog(logContent, 0);
+        }
+        #endif
     }
 
 private:
     std::string name;
     std::chrono::time_point<std::chrono::high_resolution_clock> start_time;
     std::chrono::time_point<std::chrono::high_resolution_clock> end_time;
+    std::string                                                 current_start_time;
+    std::string                                                 current_end_time;
 };
 
 

@@ -143,6 +143,23 @@ public:
                 }
 
                 wxArrayInt widths;
+                if (!dc.GetFont().IsOk()) {
+                    BOOST_LOG_TRIVIAL(error) << "dc.GetFont().IsOk() is false!!!";
+                    BOOST_LOG_TRIVIAL(warning) << "Attempting to flush logs before expected crash...";
+                    try {
+                        boost::log::core::get()->flush();
+                        BOOST_LOG_TRIVIAL(warning) << "Log flush initiated successfully.";
+                    } catch (const std::exception& e) {
+                        BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": FAILED TO INITIATE LOG FLUSH! Error: " << e.what();
+                    } catch (...) {
+                        BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": FAILED TO INITIATE LOG FLUSH! Unknown exception.";
+                    }
+
+                    const int delay_ms = 200;
+                    BOOST_LOG_TRIVIAL(info) << "Introducing " << delay_ms << "ms delay to aid log writing...";
+                    std::this_thread::sleep_for(std::chrono::milliseconds(delay_ms));
+                    BOOST_LOG_TRIVIAL(info) << "Delay finished. Proceeding to expected crash point...";
+                }
                 dc.GetPartialTextExtents(line, widths);
 
                 const size_t posEnd = std::lower_bound(widths.begin(), widths.end(), widthMax) - widths.begin();

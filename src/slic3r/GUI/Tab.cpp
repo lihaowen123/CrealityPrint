@@ -1506,6 +1506,18 @@ void Tab::on_value_change(const std::string& opt_key, const boost::any& value)
         m_config->set_key_value("pellet_flow_coefficient", new ConfigOptionFloats{double_value});
     }
     
+     if (opt_key == "enable_support") {
+     /*   m_config->set_key_value("enable_support", new ConfigOptionBool{boost::any_cast<bool>(value)});
+        bool check = m_config->opt_bool("enable_support");*/
+        wxGetApp().get_tab(Preset::TYPE_PRINT)->update();
+    }
+
+    if (opt_key == "support_type") {
+        DynamicPrintConfig new_conf = *m_config;
+     /*   new_conf.set_key_value("support_type", new ConfigOptionEnum<SupportType>(stNormal));
+        m_config->opt_enum<SupportType>("support_type");*/
+        wxGetApp().get_tab(Preset::TYPE_PRINT)->update();
+    }
 
     if (opt_key == "single_extruder_multi_material") {
         const auto bSEMM = m_config->opt_bool("single_extruder_multi_material");
@@ -1576,7 +1588,7 @@ void Tab::on_value_change(const std::string& opt_key, const boost::any& value)
     // BBS popup a message to ask the user to set optimum parameters for tree support
     if (opt_key == "support_type" || opt_key == "support_style") {
         if (is_tree_slim(m_config->opt_enum<SupportType>("support_type"), m_config->opt_enum<SupportMaterialStyle>("support_style")) &&
-            !(m_config->opt_float("support_top_z_distance") == 0 && m_config->opt_int("support_interface_top_layers") == 0 && m_config->opt_int("tree_support_wall_count") == 2)) {
+            !(m_config->opt_float("support_top_z_distance") == 0 && m_config->opt_int("support_interface_top_layers") == 0 && m_config->opt_int("tree_support_wall_count_tree") == 2)) {
             wxString msg_text = _L("We have added an experimental style \"Tree Slim\" that features smaller support volume but weaker strength.\n"
                                     "We recommend using it with: 0 interface layers, 0 top distance, 2 walls.");
             msg_text += "\n\n" + _L("Change these settings automatically? \n"
@@ -1587,7 +1599,7 @@ void Tab::on_value_change(const std::string& opt_key, const boost::any& value)
             if (dialog.ShowModal() == wxID_YES) {
                 new_conf.set_key_value("support_top_z_distance", new ConfigOptionFloat(0));
                 new_conf.set_key_value("support_interface_top_layers", new ConfigOptionInt(0));
-                new_conf.set_key_value("tree_support_wall_count", new ConfigOptionInt(2));
+                new_conf.set_key_value("tree_support_wall_count_tree", new ConfigOptionInt(2));
                 m_config_manipulation.apply(m_config, &new_conf);
             }
             wxGetApp().plater()->update();
@@ -2335,14 +2347,15 @@ void TabPrint::build()
         optgroup = page->new_optgroup(L("Advanced"), L"param_advanced");
         optgroup->append_single_option_line("raft_first_layer_density");   // not only for raft, but for support too
         optgroup->append_single_option_line("raft_first_layer_expansion"); // not only for raft, but for support too
-        optgroup->append_single_option_line("tree_support_wall_count");
         optgroup->append_single_option_line("support_top_z_distance", "support#top-z-distance");
         optgroup->append_single_option_line("support_bottom_z_distance", "support#bottom-z-distance");
         optgroup->append_single_option_line("support_base_pattern", "support#base-pattern");
+        optgroup->append_single_option_line("tree_support_wall_count");
         optgroup->append_single_option_line("support_base_pattern_spacing", "support#base-pattern");
         optgroup->append_single_option_line("support_angle");
         optgroup->append_single_option_line("support_interface_top_layers", "support#base-pattern");
         optgroup->append_single_option_line("support_interface_bottom_layers", "support#base-pattern");
+        optgroup->append_single_option_line("support_interface_min_area", "support");
         optgroup->append_single_option_line("support_interface_pattern", "support#base-pattern");
         optgroup->append_single_option_line("support_interface_spacing", "support#base-pattern");
         optgroup->append_single_option_line("support_bottom_interface_spacing");
@@ -2926,6 +2939,21 @@ bool TabPrintModel::has_key(std::string const& key)
     return std::find(m_keys.begin(), m_keys.end(), key) != m_keys.end();
 }
 
+boost::any TabPrintModel::value(std::string const& key) 
+{ 
+    boost::any res;
+    if (key == "support_type")
+    {
+        res = m_config->opt_enum<SupportType>(key);
+    } 
+    else if (key == "enable_support")
+    {
+        res = m_config->opt_bool(key);
+    }
+
+    return res;
+}
+ 
 void TabPrintModel::activate_selected_page(std::function<void()> throw_if_canceled)
 {
     TabPrint::activate_selected_page(throw_if_canceled);
@@ -3923,7 +3951,7 @@ void TabFilament::update()
         wxGetApp().mainframe->on_config_changed(m_config);
 }
 
-void TabFilament::changedSelectFilament(std::string presetName)
+bool TabFilament::changedSelectFilament(std::string presetName)
 {
     //m_preset_bundle->physical_printers.unselect_printer();
     //// select preset
@@ -3939,7 +3967,8 @@ void TabFilament::changedSelectFilament(std::string presetName)
 
     // select preset
     //std::string preset_name = m_presets_choice->GetString(selection).ToUTF8().data();
-    select_preset(Preset::remove_suffix_modified(preset_name));
+    bool optRes = select_preset(Preset::remove_suffix_modified(preset_name));
+    return optRes;
 }
 
 void TabFilament::clear_pages()
@@ -5133,7 +5162,10 @@ void TabPrinter::on_preset_loaded()
 {
     auto*  nozzle_diameter = dynamic_cast<const ConfigOptionFloats*>(m_config->option("nozzle_diameter"));
     size_t extruders_count = nozzle_diameter->values.size();
-    extruders_count_changed(extruders_count);
+    if (m_extruders_count != extruders_count)
+    {
+        extruders_count_changed(extruders_count);
+    }
     //build_unregular_pages();
 }
 
@@ -6717,13 +6749,15 @@ void TabPrinter::changedSelectPrint(size_t selection)
     }
 }
 
-void TabPrinter::changedSelectPrint(std::string presetName)
+bool TabPrinter::changedSelectPrint(std::string presetName)
 {
     m_preset_bundle->physical_printers.unselect_printer();
     // select preset
     std::string preset_name = presetName;
-    select_preset(Preset::remove_suffix_modified(preset_name));
+    bool optRes = select_preset(Preset::remove_suffix_modified(preset_name));
+    return optRes;
 }
+
 void TabPrinter::create_preset_tab()
 {
     //move to ParamsPanel

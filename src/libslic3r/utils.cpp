@@ -283,29 +283,36 @@ const std::string& custom_gcodes_dir()
 Slic3r::I18N::translate_fn_type Slic3r::I18N::translate_fn = nullptr;
 static std::string g_data_dir;
 
-void set_data_dir(const std::string &dir)
+void set_data_dir(const std::string &dir, bool use_directly)
 {
-	//A.0
-	std::string version_dir = CREALITYPRINT_VERSION_MAJOR + std::string(".0");
-	std::string version = std::string(PROJECT_VERSION_EXTRA);
-	bool        is_alpha = boost::algorithm::icontains(version, "alpha");
-	if (is_alpha) {
-		version_dir = version_dir + std::string(" Alpha");
-	}
-    if(dir.empty())
-    {
-        g_data_dir = dir;
-    }
-    else
-    {
-        if (!dir.empty() && !boost::filesystem::exists(dir)) {
-            boost::filesystem::create_directories(dir);
+	if(use_directly)
+	{
+		g_data_dir = dir;
+	}else{
+		//A.0
+		std::string version_dir = CREALITYPRINT_VERSION_MAJOR + std::string(".0");
+		std::string version = std::string(PROJECT_VERSION_EXTRA);
+	    bool  is_alpha = boost::algorithm::icontains(version, "alpha");
+	   if (is_alpha) {
+	 	version_dir = version_dir + std::string(" Alpha");
+	   }
+
+		if(dir.empty())
+		{
+			g_data_dir = dir;
+		}
+		else
+		{
+            if (!dir.empty() && !boost::filesystem::exists(dir)) {
+                boost::filesystem::create_directories(dir);
+            }
+			#ifdef _WIN32
+            g_data_dir = dir + "\\" + SLIC3R_APP_USE_FORDER + "\\" + version_dir;
+			#else
+            g_data_dir = dir + "/" + SLIC3R_APP_USE_FORDER + "/" + version_dir;
+			#endif
+            //g_data_dir = dir + "\\" + SLIC3R_APP_USE_FORDER + "\\" + version_dir;
         }
-#ifdef _WIN32
-        g_data_dir = dir + "\\" + SLIC3R_APP_USE_FORDER + "\\" + version_dir;
-#else
-		g_data_dir = dir + "/" + SLIC3R_APP_USE_FORDER + "/" + version_dir;
-#endif
     }
 
     if (!g_data_dir.empty() && !boost::filesystem::exists(g_data_dir)) {

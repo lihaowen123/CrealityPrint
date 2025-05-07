@@ -6,6 +6,7 @@
 #include "wx/cmdline.h"
 #include "wx/notifmsg.h"
 #include "wx/settings.h"
+#include <vector>
 #include <wx/webview.h>
 #include <wx/string.h>
 
@@ -59,6 +60,11 @@ namespace Slic3r {
             int load_machine_preset_data();
             bool LoadFile(std::string jPath, std::string & sContent);
 
+            // need to close the video when send page is opened
+            void request_close_detail_page();
+
+            void request_reopen_detail_video();
+
         private:
             void SendAPIKey();
             std::string get_plate_data_on_show();
@@ -66,6 +72,7 @@ namespace Slic3r {
             void handle_request_update_device_relate_to_account(const nlohmann::json& json_data);
         private:
             void down_file(std::string url, std::string name, std::string path_type);
+            void down_files(std::vector<std::string> download_infos, std::string savePath, std::string path_type );
             void scan_device();
 
             wxWebView* m_browser;

@@ -333,7 +333,13 @@ public:
 	// Set speed factor override percentage.
 	WipeTowerWriterCreality& speed_override(int speed)
 	{
-        m_gcode += "M220 S" + std::to_string(speed) + "\n";
+
+
+    //creality 暂时屏蔽M220指令,固件不支持
+#if 0
+       m_gcode += "M220 S" + std::to_string(speed) + "\n";
+#endif
+
 		return *this;
     }
 
@@ -1213,27 +1219,114 @@ void WipeTowerCreality::plan_toolchange(float z_par, float layer_height_par, uns
 
 void WipeTowerCreality::plan_tower()
 {
-	// Calculate m_wipe_tower_depth (maximum depth for all the layers) and propagate depths downwards
-	m_wipe_tower_depth = 0.f;
-	for (auto& layer : m_plan)
-		layer.depth = 0.f;
-    m_wipe_tower_height = m_plan.empty() ? 0.f : m_plan.back().z;
-    m_current_height = 0.f;
-	
-    for (int layer_index = int(m_plan.size()) - 1; layer_index >= 0; --layer_index)
-	{
-		float this_layer_depth = std::max(m_plan[layer_index].depth, m_plan[layer_index].toolchanges_depth());
-		m_plan[layer_index].depth = this_layer_depth;
-		
-		if (this_layer_depth > m_wipe_tower_depth - m_perimeter_width)
-			m_wipe_tower_depth = this_layer_depth + m_perimeter_width;
+    // BBS
+    // calculate extra spacing
+    float max_depth = 0.f;
+    for (auto& info : m_plan)
+        max_depth = std::max(max_depth, info.toolchanges_depth());
 
-		for (int i = layer_index - 1; i >= 0 ; i--)
-		{
-			if (m_plan[i].depth - this_layer_depth < 2*m_perimeter_width )
-				m_plan[i].depth = this_layer_depth;
-		}
-	}
+    float min_wipe_tower_depth = 0.f;
+    auto  iter                 = WipeTower::min_depth_per_height.begin();
+    while (iter != WipeTower::min_depth_per_height.end()) {
+        auto curr_height_to_depth = *iter;
+
+        // This is the case that wipe tower height is lower than the first min_depth_to_height member.
+        if (curr_height_to_depth.first >= m_wipe_tower_height) {
+            min_wipe_tower_depth = curr_height_to_depth.second;
+            break;
+        }
+
+        iter++;
+
+        // If curr_height_to_depth is the last member, use its min_depth.
+        if (iter == WipeTower::min_depth_per_height.end()) {
+            min_wipe_tower_depth = curr_height_to_depth.second;
+            break;
+        }
+
+        // If wipe tower height is between the current and next member, set the min_depth as linear interpolation between them
+        auto next_height_to_depth = *iter;
+        if (next_height_to_depth.first > m_wipe_tower_height) {
+            float height_base    = curr_height_to_depth.first;
+            float height_diff    = next_height_to_depth.first - curr_height_to_depth.first;
+            float min_depth_base = curr_height_to_depth.second;
+            float depth_diff     = next_height_to_depth.second - curr_height_to_depth.second;
+
+            min_wipe_tower_depth = min_depth_base + (m_wipe_tower_height - curr_height_to_depth.first) / height_diff * depth_diff;
+            break;
+        }
+    }
+
+    if (max_depth < EPSILON && m_enable_timelapse_print)
+    {
+        if (m_enable_timelapse_print && max_depth < EPSILON)
+            max_depth = min_wipe_tower_depth;
+
+        if (max_depth + EPSILON < min_wipe_tower_depth)
+            m_extra_spacing = min_wipe_tower_depth / max_depth;
+        else
+            m_extra_spacing = 1.f;
+
+        for (int idx = 0; idx < m_plan.size(); idx++) {
+            auto& info = m_plan[idx];
+            if (idx == 0 && m_extra_spacing > 1.f + EPSILON) {
+                // apply solid fill for the first layer
+                info.extra_spacing = 1.f;
+                for (auto& toolchange : info.tool_changes) {
+                    float x_to_wipe     = volume_to_length(toolchange.wipe_volume, m_perimeter_width, info.height);
+                    float line_len      = m_wipe_tower_width - 2 * m_perimeter_width;
+                    float x_to_wipe_new = x_to_wipe * m_extra_spacing;
+                    x_to_wipe_new       = std::floor(x_to_wipe_new / line_len) * line_len;
+                    x_to_wipe_new       = std::max(x_to_wipe_new, x_to_wipe);
+
+                    int line_count            = std::ceil((x_to_wipe_new - WT_EPSILON) / line_len);
+                    toolchange.required_depth = line_count * m_perimeter_width;
+                    toolchange.wipe_volume    = x_to_wipe_new / x_to_wipe * toolchange.wipe_volume;
+                    //toolchange.wipe_length    = x_to_wipe_new;
+                }
+            } else {
+                info.extra_spacing = m_extra_spacing;
+                for (auto& toolchange : info.tool_changes) {
+                    toolchange.required_depth *= m_extra_spacing;
+                    //toolchange.wipe_length = volume_to_length(toolchange.wipe_volume, m_perimeter_width, info.height);
+                }
+            }
+        }
+    }
+
+
+    // Calculate m_wipe_tower_depth (maximum depth for all the layers) and propagate depths downwards
+    m_wipe_tower_depth = 0.f;
+    for (auto& layer : m_plan)
+        layer.depth = 0.f;
+    m_wipe_tower_height = m_plan.empty() ? 0.f : m_plan.back().z;
+    m_current_height    = 0.f;
+
+    float max_depth_for_all = 0;
+    for (int layer_index = int(m_plan.size()) - 1; layer_index >= 0; --layer_index) {
+        float this_layer_depth = std::max(m_plan[layer_index].depth, m_plan[layer_index].toolchanges_depth());
+        if (m_enable_timelapse_print && this_layer_depth < EPSILON)
+            this_layer_depth = min_wipe_tower_depth;
+
+        m_plan[layer_index].depth = this_layer_depth;
+
+        if (this_layer_depth > m_wipe_tower_depth - m_perimeter_width)
+            m_wipe_tower_depth = this_layer_depth + m_perimeter_width;
+
+        for (int i = layer_index - 1; i >= 0; i--) {
+            if (m_plan[i].depth - this_layer_depth < 2 * m_perimeter_width)
+                m_plan[i].depth = this_layer_depth;
+        }
+
+        if (m_enable_timelapse_print && layer_index == 0)
+            max_depth_for_all = m_plan[0].depth;
+    }
+
+    if (m_enable_timelapse_print) {
+        for (int i = int(m_plan.size()) - 1; i >= 0; i--) {
+            m_plan[i].depth = max_depth_for_all;
+        }
+    }
 }
 
 // Return index of first toolchange that switches to non-soluble extruder

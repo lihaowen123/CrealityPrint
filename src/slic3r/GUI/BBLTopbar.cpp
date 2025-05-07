@@ -602,8 +602,13 @@ void BBLTopbar::Init(wxFrame* parent)
     //CX END
 
     this->AddStretchSpacer(1);
-    m_title_item = this->AddLabel(ID_TITLE, "", FromDIP(TOPBAR_TITLE_WIDTH));
-    m_title_item->SetAlignment(wxALIGN_CENTER_VERTICAL);
+    m_title_LabelItem = new Label(this, Label::Head_12, _L(""));
+    m_title_LabelItem->SetMinSize(wxSize(172, FromDIP(-1)));
+    m_title_LabelItem->SetMaxSize(wxSize(172, FromDIP(-1)));
+    m_title_LabelItem->SetWindowStyleFlag(wxALIGN_RIGHT | wxALIGN_CENTER_VERTICAL);
+    wxColour bgColor  = Slic3r::GUI::wxGetApp().dark_mode() ? wxColour("#010101") : wxColour(214, 214, 220);
+    m_title_LabelItem->SetBackgroundColour(bgColor);
+    m_title_item = this->AddControl(m_title_LabelItem);
     this->AddStretchSpacer(1);  
      //this->AddSpacer(FromDIP(15));
      //this->AddSeparator();
@@ -916,7 +921,13 @@ wxMenu* BBLTopbar::GetCalibMenu()
 void BBLTopbar::SetTitle(wxString title)
 {
     wxGCDC dc(this);
-    title = wxControl::Ellipsize(title, dc, wxELLIPSIZE_END, FromDIP(TOPBAR_TITLE_WIDTH) - FromDIP(30));
+    wxString newTitle = wxControl::Ellipsize(title, dc, wxELLIPSIZE_END, FromDIP(TOPBAR_TITLE_WIDTH) - FromDIP(30));
+
+    if (m_title_LabelItem) {
+        m_title_LabelItem->SetLabel(newTitle);
+        m_title_LabelItem->SetToolTip(title);
+    }
+
     if (m_title_item!=nullptr)
     {
         m_title_item->SetLabel(title);
@@ -1030,6 +1041,9 @@ void BBLTopbar::Rescale(bool isResize) {
         pCtr->reLayout();
         Realize();
     }
+
+    wxColour bgColor = Slic3r::GUI::wxGetApp().dark_mode() ? wxColour("#010101") : wxColour(214, 214, 220);
+    m_title_LabelItem->SetBackgroundColour(bgColor);
 }
 
 void BBLTopbar::OnIconize(wxAuiToolBarEvent& event)

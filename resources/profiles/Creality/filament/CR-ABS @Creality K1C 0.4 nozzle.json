@@ -72,7 +72,7 @@
     "filament_unloading_speed": "90",
     "filament_unloading_speed_start": "100",
     "filament_vendor": [
-        "Generic"
+        "Creality"
     ],
     "filament_wipe": "0",
     "filament_wipe_distance": "1",
@@ -81,6 +81,8 @@
     "full_fan_speed_layer": "0",
     "hot_plate_temp": "100",
     "hot_plate_temp_initial_layer": "100",
+    "material_flow_dependent_temperature": "0",
+    "material_flow_temp_graph": "[[3.0,210],  [10.0,220],  [12.0,230]]",
     "nozzle_temperature": "260",
     "nozzle_temperature_initial_layer": "260",
     "nozzle_temperature_range_high": "260",

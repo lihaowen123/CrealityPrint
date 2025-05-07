@@ -1077,6 +1077,8 @@ std::vector<int> GCodeViewer::get_plater_extruder()
 void GCodeViewer::load(const GCodeProcessorResult& gcode_result, const Print& print, const BuildVolume& build_volume,
                 const std::vector<BoundingBoxf3>& exclude_bounding_box, ConfigOptionMode mode, bool only_gcode)
 {
+    BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << " start";
+
     // avoid processing if called with the same gcode_result
     if (m_last_result_id == gcode_result.id) {
         //BBS: add logs
@@ -1206,6 +1208,7 @@ void GCodeViewer::load(const GCodeProcessorResult& gcode_result, const Print& pr
     gcode_result.unlock();
     //BBS: add logs
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": finished, m_buffers size %1%!")%m_buffers.size();
+    BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << " error";
 }
 
 void GCodeViewer::refresh(const GCodeProcessorResult& gcode_result, const std::vector<std::string>& str_tool_colors)
@@ -2125,6 +2128,8 @@ void GCodeViewer::export_toolpaths_to_obj(const char* filename) const
 
 void GCodeViewer::load_toolpaths(const GCodeProcessorResult& gcode_result, const BuildVolume& build_volume, const std::vector<BoundingBoxf3>& exclude_bounding_box)
 {
+    BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << " start memory info " << log_memory_info();
+
     // max index buffer size, in bytes
     static const size_t IBUFFER_THRESHOLD_BYTES = 64 * 1024 * 1024;
 
@@ -2452,7 +2457,7 @@ void GCodeViewer::load_toolpaths(const GCodeProcessorResult& gcode_result, const
     m_extruders_count = gcode_result.extruders_count;
 
     unsigned int progress_count = 0;
-    static const unsigned int progress_threshold = m_moves_count/100;
+    unsigned int progress_threshold = m_moves_count/100;
     //BBS: add only gcode mode
     ProgressDialog *          progress_dialog    = m_only_gcode_in_preview ?
         new ProgressDialog(_L("Loading G-codes"), "...",
@@ -2564,6 +2569,7 @@ void GCodeViewer::load_toolpaths(const GCodeProcessorResult& gcode_result, const
     size_t seams_count = 0;
     std::vector<size_t> biased_seams_ids;
 
+     BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << " load indices start";
     // toolpaths data -> extract vertices from result
     for (size_t i = 0; i < m_moves_count; ++i) {
         const GCodeProcessorResult::MoveVertex& curr = gcode_result.moves[i];
@@ -2602,14 +2608,82 @@ void GCodeViewer::load_toolpaths(const GCodeProcessorResult& gcode_result, const
         }*/
 
         // ensure there is at least one vertex buffer
-        if (v_multibuffer.empty())
-            v_multibuffer.push_back(VertexBuffer());
+        if (v_multibuffer.empty()) {
+            BOOST_LOG_TRIVIAL(warning) << "v_multibuffer.empty(),  v_multibuffer.push_back(VertexBuffer())";
+            v_multibuffer.push_back(VertexBuffer());        
+        }
+
 
         // if adding the vertices for the current segment exceeds the threshold size of the current vertex buffer
         // add another vertex buffer
         // BBS: get the point number and then judge whether the remaining buffer is enough
         size_t points_num = curr.is_arc_move_with_interpolation_points() ? curr.interpolation_points.size() + 1 : 1;
         size_t vertices_size_to_add = (t_buffer.render_primitive_type == TBuffer::ERenderPrimitiveType::BatchedModel) ? t_buffer.model.data.vertices_size_bytes() : points_num * t_buffer.max_vertices_per_segment_size_bytes();
+        if (v_multibuffer.empty()) { // <--- 只在这里添加日志逻辑
+            // --- 检测到致命错误：即将访问空 vector 的 back() ---
+            std::ostringstream error_msg;
+            // 获取尽可能多的相关上下文信息
+            const GCodeProcessorResult::MoveVertex& prev = gcode_result.moves[i - 1]; // 确保 i > 0
+            error_msg << "\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+                      << __FUNCTION__ << ": IMMINENT CRASH DETECTED!"<< ")\n"
+                      << "Reason: v_multibuffer is unexpectedly EMPTY right before accessing back().size()!\n"
+                      << "This contradicts earlier logic that should ensure it's not empty.\n"
+                      << "Suspect memory corruption or subtle logic/optimization error.\n"
+                      << "Allowing crash to proceed for reporting purposes after logging.\n"
+                      << "---------------- Context Information -----------------\n"
+                      << "Loop Index (i): " << i
+                      << "\n"
+                      // << "Move ID (move_id): " << move_id << "\n" // 如果 move_id 在此作用域可用
+                      << "Buffer ID (id): " << (int) id << "\n"
+                      << "Overall State: vertices.size()=" << vertices.size() << ", m_buffers.size()=" << m_buffers.size()
+                      << "\n"
+                      // << "Target TBuffer Info: render_primitive_type=" << static_cast<int>(t_buffer.render_primitive_type) << "\n" //
+                      // 如果 t_buffer 可用
+                      // << "Calculated vertices_size_to_add: " << vertices_size_to_add << "\n" // 如果 vertices_size_to_add 可用
+                      << "--- Current Move (curr) ---\n"
+                      << "  Type: " << static_cast<int>(curr.type) << " (" << buffer_id(curr.type) << ")\n"
+                      << "  Position: (" << curr.position.x() << ", " << curr.position.y() << ", " << curr.position.z() << ")\n"
+                      << "  Extruder ID: " << curr.extruder_id << ", G-code Line ID: " << curr.gcode_id << "\n"
+                      << "--- Previous Move (prev) ---\n"
+                      << "  Type: " << static_cast<int>(prev.type) << " (" << buffer_id(prev.type) << ")\n"
+                      << "  Position: (" << prev.position.x() << ", " << prev.position.y() << ", " << prev.position.z() << ")\n"
+                      << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n";
+
+            // 1. 使用日志库记录错误 (FATAL 级别)
+            BOOST_LOG_TRIVIAL(error) << error_msg.str();
+
+            // 2. 强制刷新日志库缓冲区 (关键步骤)
+            BOOST_LOG_TRIVIAL(warning) << "Attempting to flush logs before expected crash...";
+            try {
+                boost::log::core::get()->flush();
+                BOOST_LOG_TRIVIAL(warning) << "Log flush initiated successfully.";
+            } catch (const std::exception& e) {
+                BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": FAILED TO INITIATE LOG FLUSH! Error: " << e.what();
+            } catch (...) {
+                BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": FAILED TO INITIATE LOG FLUSH! Unknown exception.";
+            }
+
+            // 3. 短暂延迟，给日志写入留出时间 (不阻塞后台日志线程)
+            const int delay_ms = 1000;
+            BOOST_LOG_TRIVIAL(info) << "Introducing " << delay_ms << "ms delay to aid log writing...";
+            std::this_thread::sleep_for(std::chrono::milliseconds(delay_ms));
+            BOOST_LOG_TRIVIAL(info) << "Delay finished. Proceeding to expected crash point...";
+           
+            BOOST_LOG_TRIVIAL(warning) << "Attempting to flush logs before expected crash...";
+            try {
+                boost::log::core::get()->flush();
+                BOOST_LOG_TRIVIAL(warning) << "Log flush initiated successfully.";
+            } catch (const std::exception& e) {
+                BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": FAILED TO INITIATE LOG FLUSH! Error: " << e.what();
+            } catch (...) {
+                BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": FAILED TO INITIATE LOG FLUSH! Unknown exception.";
+            }
+
+            // 4. 不做任何阻止，让代码自然执行到下一行导致崩溃
+            BOOST_LOG_TRIVIAL(error) << ">>> Now executing the line expected to crash <<<";
+
+        }   
+        
         if (v_multibuffer.back().size() * sizeof(float) > t_buffer.vertices.max_size_bytes() - vertices_size_to_add) {
             v_multibuffer.push_back(VertexBuffer());
             if (t_buffer.render_primitive_type == TBuffer::ERenderPrimitiveType::Triangle) {
@@ -2652,6 +2726,9 @@ void GCodeViewer::load_toolpaths(const GCodeProcessorResult& gcode_result, const
                 options_zs.emplace_back(curr.position[2]);
         }
     }
+
+
+    BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << " load indices end";
 
     /*for (size_t b = 0; b < vertices.size(); ++b) {
         MultiVertexBuffer& v_multibuffer = vertices[b];
@@ -2893,6 +2970,8 @@ void GCodeViewer::load_toolpaths(const GCodeProcessorResult& gcode_result, const
     }
 
     // send vertices data to gpu, where needed
+    BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << " send vertices data to gpu, where needed start";
+
     for (size_t i = 0; i < m_buffers.size(); ++i) {
         TBuffer& t_buffer = m_buffers[i];
         if (t_buffer.render_primitive_type == TBuffer::ERenderPrimitiveType::InstancedModel) {
@@ -2936,6 +3015,8 @@ void GCodeViewer::load_toolpaths(const GCodeProcessorResult& gcode_result, const
             }
         }
     }
+
+    BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << " send vertices data to gpu, where needed end";
 
 #if ENABLE_GCODE_VIEWER_STATISTICS
     auto smooth_vertices_time = std::chrono::high_resolution_clock::now();
@@ -3239,6 +3320,8 @@ void GCodeViewer::load_toolpaths(const GCodeProcessorResult& gcode_result, const
 
     if (progress_dialog != nullptr)
         progress_dialog->Destroy();
+
+    BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << " end memory info " << log_memory_info();
 }
 
 void GCodeViewer::load_shells(const Print& print, bool initialized, bool force_previewing)
@@ -5573,7 +5656,7 @@ void GCodeViewer::render_statistics()
 
 void GCodeViewer::log_memory_used(const std::string& label, int64_t additional) const
 {
-    if (Slic3r::get_logging_level() >= 5) {
+    if (Slic3r::get_logging_level() >= 0) {
         int64_t paths_size = 0;
         int64_t render_paths_size = 0;
         for (const TBuffer& buffer : m_buffers) {
@@ -5586,7 +5669,8 @@ void GCodeViewer::log_memory_used(const std::string& label, int64_t additional) 
         }
         int64_t layers_size = SLIC3R_STDVEC_MEMSIZE(m_layers.get_zs(), double);
         layers_size += SLIC3R_STDVEC_MEMSIZE(m_layers.get_endpoints(), Layers::Endpoints);
-        BOOST_LOG_TRIVIAL(info) << __FUNCTION__<< boost::format("paths_size %1%, render_paths_size %2%,layers_size %3%, additional %4%\n")
+        BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << " " << label << " "
+                                 << boost::format("paths_size %1%, render_paths_size %2%,layers_size %3%, additional %4%\n")
             %paths_size %render_paths_size %layers_size %additional;
         BOOST_LOG_TRIVIAL(trace) << label
             << "(" << format_memsize_MB(additional + paths_size + render_paths_size + layers_size) << ");"

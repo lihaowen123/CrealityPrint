@@ -57,6 +57,7 @@ private:
     void on_opening() override;
     void on_shutdown() override;
     PainterGizmoType get_painter_type() const override;
+    bool             render_combo(const std::string& label, const std::vector<std::string>& lines, int& selection_idx);
 
     void select_facets_by_angle(float threshold, bool block);
     // BBS
@@ -88,7 +89,9 @@ private:
     // Mutex and condition variable to synchronize m_thread with the UI thread.
     std::mutex      m_mutex;
     int m_generate_count;
-
+    bool            m_IsSupport = false;
+    std::vector<std::string> m_SupportTypes    = {_u8L("normal(auto)"), _u8L("tree(auto)"), _u8L("normal(manual)"), _u8L("tree(manual)")};
+    int                      m_CurType     = 0;
     // This map holds all translated description texts, so they can be easily referenced during layout calculations
     // etc. When language changes, GUI is recreated and this class constructed again, so the change takes effect.
     std::map<std::string, wxString> m_desc;

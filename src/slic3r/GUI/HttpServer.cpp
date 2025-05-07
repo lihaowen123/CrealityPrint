@@ -4,6 +4,10 @@
 #include "slic3r/Utils/Http.hpp"
 #include "slic3r/Utils/NetworkAgent.hpp"
 #include <boost/regex.hpp>
+#if defined(__linux__) || defined(__LINUX__)
+#include "video/WebRTCDecoder.h"
+#include <boost/asio/steady_timer.hpp>
+#endif
 namespace Slic3r {
 namespace GUI {
 
@@ -85,15 +89,50 @@ void session::read_next_line()
                     }
 
                     const std::string url_str = Http::url_decode(headers.get_url());
-                    const auto        resp    = server.server.m_request_handler(url_str);
-                    std::stringstream ssOut;
-                    resp->write_response(ssOut);
-                    std::shared_ptr<std::string> str = std::make_shared<std::string>(ssOut.str());
-                    async_write(socket, boost::asio::buffer(str->c_str(), str->length()),
-                                [this, self, str](const boost::beast::error_code& e, std::size_t s) {
-                        std::cout << "done" << std::endl;
-                        server.stop(self);
-                    });
+                    if (url_str.find("/videostream") == 0) {
+                        #if defined(__linux__) || defined(__LINUX__)
+                        std::string   ip           = url_get_param(url_str, "ip");
+                        std::string timestamp = url_get_param(url_str, "timestamp");
+                        std::string video_url = (boost::format("http://%1%:8000/call/webrtc_local") % ip).str();
+                        HttpServer *pServer = wxGetApp().get_server();
+                        std::cout << "start webrtc!"<<timestamp<<"\n";
+                        pServer->mjpeg_server_started = true;
+                        WebRTCDecoder::GetInstance()->startPlay(video_url); 
+                        
+                        const std::string header =
+                                    "HTTP/1.1 200 OK\r\n"
+                                    "Content-Type: multipart/x-mixed-replace; boundary=boundarydonotcross\r\n"
+                                    "Cache-Control: no-store, no-cache, must-revalidate, pre-check=0, post-check=0, max-age=0\r\n"
+                                    "pragma:no-cache\r\n"
+                                    "Access-Control-Allow-Origin: *\r\n"
+                                    "Connection: close\r\n\r\n";
+                        async_write(socket,  boost::asio::buffer(header),[this, self,pServer](const boost::beast::error_code& e, std::size_t s) {
+                            if(!e)
+                            {
+                                if(!this->m_video_timer)
+                                {
+                                    this->m_video_timer = new boost::asio::deadline_timer(server.io_service, boost::posix_time::milliseconds(100));
+                                }
+                                std::cout << "start send!\r\n";
+                                this->sendFrame(e,socket);
+                            }else{
+                                pServer->mjpeg_server_started = false;
+                                std::cout << "end send!\r\n";
+                            }
+                            
+                        });
+                        #endif
+                    }else{
+                        const auto        resp    = server.server.m_request_handler(url_str);
+                        std::stringstream ssOut;
+                        resp->write_response(ssOut);
+                        std::shared_ptr<std::string> str = std::make_shared<std::string>(ssOut.str());
+                        async_write(socket, boost::asio::buffer(str->c_str(), str->length()),
+                                    [this, self, str](const boost::beast::error_code& e, std::size_t s) {
+                            std::cout << "done" << std::endl;
+                            server.stop(self);
+                        });
+                    }
                 } else {
                     read_body();
                 }
@@ -105,7 +144,63 @@ void session::read_next_line()
         }
     });
 }
-
+#if defined(__linux__) || defined(__LINUX__)
+void session::sendFrame(const boost::system::error_code &ec,boost::asio::ip::tcp::socket &socket)
+{
+        //this->frame_mutex_.lock();
+        std::vector<unsigned char> copy_frame = WebRTCDecoder::GetInstance()->getFrameData();
+        //this->frame_mutex_.unlock();
+        if(copy_frame.size()==0)
+        {
+            this->m_video_timer->cancel();
+            this->m_video_timer->expires_at(this->m_video_timer->expires_at()+boost::posix_time::milliseconds(150));
+            this->m_video_timer->async_wait([&](const auto& error) {
+                    if (!error) {
+                        //std::cout << "start send frame!\r\n";
+                        this->sendFrame(ec,socket);
+                    }
+                });
+            return;
+        }
+        if(WebRTCDecoder::GetInstance()->isStop())
+        {
+            //break;
+        }
+        
+        //std::cout << "send!\n"<<copy_frame.size();
+        const std::string frame_header =
+                    "--boundarydonotcross\r\n"
+                    "Content-Type: image/jpeg\r\n"
+                    "Content-Length: " + 
+                    std::to_string(copy_frame.size()) + "\r\n\r\n";
+        
+        std::vector<boost::asio::const_buffer> buffers;
+        buffers.emplace_back(boost::asio::buffer(frame_header));
+        buffers.emplace_back(boost::asio::buffer(copy_frame));
+        //std::cout << "start send!\r\n";
+        boost::asio::async_write(socket,  buffers,[this,&socket](const boost::beast::error_code& ec, std::size_t s) {
+            
+            if(!ec)
+            {
+                //std::cout << "send!"<<this->m_video_timer<<"\r\n";
+                //std::this_thread::sleep_for(std::chrono::milliseconds(80));
+                //this->sendFrame(ec,socket);
+                this->m_video_timer->cancel();
+                this->m_video_timer->expires_at(this->m_video_timer->expires_at()+boost::posix_time::milliseconds(150));
+                this->m_video_timer->async_wait([&](const auto& error) {
+                    if (!error) {
+                        //std::cout << "start send frame!\r\n";
+                        this->sendFrame(ec,socket);
+                    }
+                });
+            }else{
+                //this->mjpeg_server_started = false;
+                std::cout << "end send!\r\n";
+            }
+            
+        });
+}
+#endif
 void HttpServer::IOServer::do_accept()
 {
     acceptor.async_accept([this](boost::system::error_code ec, boost::asio::ip::tcp::socket socket) {
@@ -144,23 +239,32 @@ void HttpServer::IOServer::stop_all()
 
 
 HttpServer::HttpServer(boost::asio::ip::port_type port) : port(port) {}
-
+bool is_port_in_use(unsigned short port) {
+    try {
+        boost::asio::io_context io_context;
+        boost::asio::ip::tcp::acceptor acceptor(io_context);
+        acceptor.open(boost::asio::ip::tcp::v4());
+        acceptor.bind(boost::asio::ip::tcp::endpoint(boost::asio::ip::address_v4::loopback(), port));
+        acceptor.close(); // 不需要持续监听，关闭 acceptor
+        return false; // 如果没有异常，端口未被占用
+    } catch (std::exception& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return true; // 捕获异常，说明端口被占用
+    }
+}
 void HttpServer::start()
 {
     boost::asio::io_context io_context;
     boost::asio::ip::tcp::socket socket(io_context);
-    boost::system::error_code ec;
     
+    boost::system::error_code ec;
+    #ifndef _WIN32
     // 尝试绑定到指定端口
     for(int i=1;i<10;i++)
     {
-        socket.open(boost::asio::ip::tcp::v4()); // 使用IPv4地址
-        socket.bind(boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port), ec);
-        socket.close();
-        if (ec) {
-            // 如果绑定失败，则端口被占用
-            std::cout << "Port " << port << " is in use." << std::endl;
-            this->port = this->port+1;
+        if(is_port_in_use(port))
+        {
+            port = port+i;
         }else{
             break;
         }
@@ -169,7 +273,7 @@ void HttpServer::start()
             return;
         }
     }
-    
+    #endif
     
     BOOST_LOG_TRIVIAL(info) << "start_http_service...:"<<port;
     start_http_server    = true;
@@ -180,7 +284,7 @@ void HttpServer::start()
             server_->acceptor.listen();
 
             server_->do_accept();
-
+            //this->m_video_timer = new boost::asio::deadline_timer(server_->io_service, boost::posix_time::milliseconds(100));
             server_->io_service.run();
         }catch(boost::system::system_error& e)
         {
@@ -274,22 +378,23 @@ std::shared_ptr<HttpServer::Response> HttpServer::creality_handle_request(const 
     std::string params;
     parse_url(url, path, params);
     boost::filesystem::path currentPath = boost::filesystem::path(resources_dir()).append("web");
+   
     if (path.find("/resources") == 0) {
         currentPath = boost::filesystem::path(resources_dir()).parent_path();
     }
     if(path.find("/login") == 0) {
-        std::string   redirect_url           = url_get_param(url, "redirect_url");
-        std::string   code           = url_get_param(url, "code");
-        std::string url_scheme = (boost::format("crealityprintlink://open?code=%1%") % code).str();
-        wxGetApp().post_openlink_cmd(url_scheme);
-        if(wxGetApp().wait_cloud_token())
-        {
-            std::string location_str = (boost::format("%1%?result=success") % redirect_url).str();
+        std::string   result_url = url_get_param(url, "result_url");
+        std::string   code       = url_get_param(url, "code");
+        std::string   url_scheme = (boost::format("crealityprintlink://open?code=%1%") % code).str();
+
+        // hack：必须在 ui 线程 post_openlink_cmd，否则 web 端无法接收到 msg
+        GUI::wxGetApp().CallAfter([url_scheme] { wxGetApp().post_openlink_cmd(url_scheme); });
+        if (wxGetApp().wait_cloud_token()) {
+            wxGetApp().send_app_message("login",true);
+            std::string location_str = (boost::format("%1%?result=success") % result_url).str();
             return std::make_shared<ResponseRedirect>(location_str);
-        }
-        else
-        {
-            std::string location_str = (boost::format("%1%?result=fail") % redirect_url).str();
+        } else {
+            std::string location_str = (boost::format("%1%?result=fail") % result_url).str();
             return std::make_shared<ResponseRedirect>(location_str);
         }
     }

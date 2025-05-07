@@ -332,7 +332,7 @@ Semver PresetBundle::get_vendor_profile_version(std::string vendor_name)
 
 VendorType PresetBundle::get_current_vendor_type()
 {
-    auto        t      = VendorType::Unknown;
+    auto        t      = VendorType::VendorType_Unknown;
     auto        config = &printers.get_edited_preset().config;
     std::string vendor_name;
     for (auto vendor_profile : vendors) {
@@ -595,7 +595,7 @@ std::string PresetBundle::get_hotend_model_for_printer_model(std::string model_n
     return out;
 }
 
-PresetsConfigSubstitutions PresetBundle::load_user_presets(std::string user, ForwardCompatibilitySubstitutionRule substitution_rule)
+PresetsConfigSubstitutions PresetBundle::load_user_presets(std::string user, ForwardCompatibilitySubstitutionRule substitution_rule,bool userConfigPreset/* = false*/)
 {
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << __LINE__ << " entry and user is: " << user;
     PresetsConfigSubstitutions substitutions;
@@ -614,6 +614,8 @@ PresetsConfigSubstitutions PresetBundle::load_user_presets(std::string user, For
         std::string print_selected_preset_name = prints.get_selected_preset().name;
         if (!m_curProcessPresetName.empty() && print_selected_preset_name == "Default Setting") {
             print_selected_preset_name = m_curProcessPresetName;
+        } else if (userConfigPreset && !m_curProcessPresetName.empty()) {
+            print_selected_preset_name = m_curProcessPresetName;
         }
         this->prints.load_presets(dir_user_presets, PRESET_PRINT_NAME, substitutions, substitution_rule);
         prints.select_preset_by_name(print_selected_preset_name, false);
@@ -624,6 +626,8 @@ PresetsConfigSubstitutions PresetBundle::load_user_presets(std::string user, For
         std::string filament_selected_preset_name = filaments.get_selected_preset().name;
         if (!m_curFilamentPresetName.empty() && filament_selected_preset_name == "Default Filament") {
             filament_selected_preset_name = m_curFilamentPresetName;
+        } else if (userConfigPreset && !m_curFilamentPresetName.empty()) {
+            filament_selected_preset_name = m_curFilamentPresetName;
         }
         this->filaments.load_presets(dir_user_presets, PRESET_FILAMENT_NAME, substitutions, substitution_rule);
         filaments.select_preset_by_name(filament_selected_preset_name, false);
@@ -633,6 +637,8 @@ PresetsConfigSubstitutions PresetBundle::load_user_presets(std::string user, For
     try {
         std::string printer_selected_preset_name = printers.get_selected_preset().name;
         if (!m_curPrinterPresetName.empty() && printer_selected_preset_name == "Default Printer") {
+            printer_selected_preset_name = m_curPrinterPresetName;
+        } else if (userConfigPreset && !m_curPrinterPresetName.empty()) {
             printer_selected_preset_name = m_curPrinterPresetName;
         }
         this->printers.load_presets(dir_user_presets, PRESET_PRINTER_NAME, substitutions, substitution_rule);
@@ -1657,7 +1663,9 @@ std::pair<PresetsConfigSubstitutions, std::string> PresetBundle::load_system_pre
                         }
                     }
                 }
-            } catch (const std::runtime_error &err) {
+            } catch(ConfigurationError &err){
+                throw err;
+            }catch (const std::runtime_error &err) {
                 if (validation_mode)
                     throw err;
                 else {
@@ -2119,6 +2127,7 @@ void PresetBundle::load_selections(AppConfig &config, const PresetPreferences& p
     // The possibly excessive filament names will be later removed with this->update_multi_material_filament_presets()
     // once the FFF technology gets selected.
     this->filament_presets = { filaments.get_selected_preset_name() };
+    this->lastFilamentPresets    = {config.get_printer_setting(initial_printer_profile_name, "filament")};
     for (unsigned int i = 1; i < 1000; ++ i) {
         char name[64];
         sprintf(name, "filament_%02u", i);
@@ -2126,6 +2135,7 @@ void PresetBundle::load_selections(AppConfig &config, const PresetPreferences& p
         if (f_name.empty())
             break;
         this->filament_presets.emplace_back(remove_ini_suffix(f_name));
+        this->lastFilamentPresets.emplace_back(remove_ini_suffix(f_name));
     }
     std::vector<std::string> filament_colors;
     auto f_colors = config.get_printer_setting(initial_printer_profile_name, "filament_colors");

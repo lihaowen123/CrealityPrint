@@ -342,6 +342,7 @@ public:
     void show_info_line(Action action, std::string preset_name = "");
     void update_config(Action action);
     void close(Action action);
+    void OnClose(wxCloseEvent& event);
     // save information about saved presets and their types to names_and_types and show SavePresetDialog to set the names for new presets
     bool save(PresetCollection* dependent_presets, bool show_save_preset_dialog = true);
 

@@ -1285,7 +1285,8 @@ int PartPlate::picking_id_component(int idx) const
 const BoundingBoxf3& PartPlate::color_bed_exclude_area(bool* valid)
 {
 	if (valid)
-		*valid = false;
+        *valid = false;
+    m_cache_is_multi_color = false;
 
 	m_color_bed_exclude_area = BoundingBoxf3();
     bool is_multi_color = fff_print()->object_used_extruders().size() > 1;
@@ -1335,7 +1336,15 @@ const BoundingBoxf3& PartPlate::color_bed_exclude_area(bool* valid)
 	if (valid)
 		*valid = true;
 
+	m_cache_is_multi_color = true;
 	return m_color_bed_exclude_area;
+}
+
+const BoundingBoxf3& PartPlate::get_color_bed_exclude_area_cache(bool* valid) 
+{
+    if (valid != NULL)
+        *valid = m_cache_is_multi_color;
+    return m_color_bed_exclude_area;
 }
 
 void PartPlate::check_gcode_path_contain_in_bed()
@@ -1617,6 +1626,18 @@ std::vector<int> PartPlate::get_extruders_without_support(bool conside_custom_gc
 			std::vector<int> volume_extruders = mv->get_extruders();
 			plate_extruders.insert(plate_extruders.end(), volume_extruders.begin(), volume_extruders.end());
 		}
+
+		// layer range
+        for (auto layer_range : mo->layer_config_ranges) {
+            if (layer_range.second.has("extruder")) {
+                // BBS: actually when user doesn't change filament by height range(value is default 0), height range should not save key
+                // "extruder". Don't know why height range always save key "extruder" because of no change(should only save difference)...
+                // Add protection here to avoid overflow
+                auto value = layer_range.second.option("extruder")->getInt();
+                if (value > 0)
+                    plate_extruders.push_back(value);
+            }
+        }
 	}
 
 	if (conside_custom_gcode) {
@@ -3926,8 +3947,8 @@ void PartPlateList::update_all_plates_pos_and_size(bool adjust_position, bool wi
 		plate->set_pos_and_size(origin1, m_plate_width, m_plate_depth, m_plate_height, adjust_position, do_clear);
 
 		// set default wipe pos when switch plate
-        if (switch_plate_type && m_plater && plate->get_used_extruders().size() <= 0) {
-			//set_default_wipe_tower_pos_for_plate(i);
+        if (switch_plate_type && m_plater /*&& plate->get_used_extruders().size() <= 0*/) {
+			set_default_wipe_tower_pos_for_plate(i);
 		}
 	}
 

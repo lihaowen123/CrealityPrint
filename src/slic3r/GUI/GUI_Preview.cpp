@@ -328,7 +328,7 @@ void Preview::load_print(bool keep_z_range, bool only_gcode)
 //BBS: add only gcode mode
 void Preview::reload_print(bool keep_volumes, bool only_gcode)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << boost::format(" %1%: enter, keep_volumes %2%")%__LINE__ %keep_volumes;
+    BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << boost::format("only_gcode %1%: enter, keep_volumes %2%") % only_gcode % keep_volumes;
 #ifdef __linux__
     // We are getting mysterious crashes on Linux in gtk due to OpenGL context activation GH #1874 #1955.
     // So we are applying a workaround here: a delayed release of OpenGL vertex buffers.
@@ -355,6 +355,7 @@ void Preview::reload_print(bool keep_volumes, bool only_gcode)
 
     load_print(false, only_gcode);
     m_only_gcode = only_gcode;
+    BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << " end";
 }
 
 //BBS: add only gcode mode
@@ -651,6 +652,7 @@ void Preview::update_layers_slider(const std::vector<double>& layers_z, bool kee
 //BBS: add only gcode mode
 void Preview::load_print_as_fff(bool keep_z_range, bool only_gcode)
 {
+    BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << " start";
     if (wxGetApp().mainframe == nullptr || wxGetApp().is_recreating_gui())
         // avoid processing while mainframe is being constructed
         return;
@@ -778,6 +780,8 @@ void Preview::load_print_as_fff(bool keep_z_range, bool only_gcode)
         } else
             update_layers_slider(zs, keep_z_range);
     }
+
+    BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << " end";
 }
 
 AssembleView::AssembleView(wxWindow* parent, Bed3D& bed, Model* model, DynamicPrintConfig* config, BackgroundSlicingProcess* process)

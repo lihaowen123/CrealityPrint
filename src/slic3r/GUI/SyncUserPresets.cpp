@@ -2,6 +2,7 @@
 #include "GUI.hpp"
 #include "GUI_App.hpp"
 #include "Plater.hpp"
+#include "MainFrame.hpp"
 #include "libslic3r/Time.hpp"
 #include "MsgDialog.hpp"
 
@@ -175,17 +176,21 @@ void SyncUserPresets::reloadPresetsInUiThread()
     BOOST_LOG_TRIVIAL(warning) << "SyncUserPresets reloadPresetsInUiThread start...";
     auto* app_config = GUI::wxGetApp().app_config;
 
-    app_config->clear_section("presets");
-    auto printer_name = GUI::wxGetApp().preset_bundle->m_curPrinterPresetName;
-    app_config->set("presets", PRESET_PRINTER_NAME, printer_name);
-    std::string filamentName = GUI::wxGetApp().preset_bundle->m_curFilamentPresetName;
-    app_config->set("presets", PRESET_FILAMENT_NAME, filamentName);
-    std::string processName = GUI::wxGetApp().preset_bundle->m_curProcessPresetName;
-    app_config->set("presets", PRESET_PRINT_NAME, processName);
+    //app_config->clear_section("presets");
+    //auto printer_name = GUI::wxGetApp().preset_bundle->m_curPrinterPresetName;
+    //app_config->set("presets", PRESET_PRINTER_NAME, printer_name);
+    //std::string filamentName = GUI::wxGetApp().preset_bundle->m_curFilamentPresetName;
+    //app_config->set("presets", PRESET_FILAMENT_NAME, filamentName);
+    //std::string processName = GUI::wxGetApp().preset_bundle->m_curProcessPresetName;
+    //app_config->set("presets", PRESET_PRINT_NAME, processName);
     //  重新加载预设文件
-    GUI::wxGetApp().preset_bundle->load_presets(*app_config, ForwardCompatibilitySubstitutionRule::EnableSilentDisableSystem);
-    GUI::wxGetApp().load_current_presets();
-    GUI::wxGetApp().plater()->set_bed_shape();
+    //GUI::wxGetApp().preset_bundle->load_presets(*app_config, ForwardCompatibilitySubstitutionRule::EnableSilentDisableSystem);
+    //GUI::wxGetApp().load_current_presets();
+    //GUI::wxGetApp().plater()->set_bed_shape();
+    std::map<std::string, std::map<std::string, std::string>> userCloudPresets = CXCloudDataCenter::getInstance().getUserCloudPresets();
+    GUI::wxGetApp().preset_bundle->load_user_presets(*app_config, userCloudPresets, ForwardCompatibilitySubstitutionRule::Enable);
+    GUI::wxGetApp().preset_bundle->save_user_presets(*app_config, GUI::wxGetApp().get_delete_cache_presets());
+    GUI::wxGetApp().mainframe->update_side_preset_ui();
     BOOST_LOG_TRIVIAL(warning) << "SyncUserPresets reloadPresetsInUiThread end";
 }
 
@@ -330,7 +335,7 @@ int SyncUserPresets::doCheckNeedSyncPrinterToCXCloud() {
                                                                        retInfo.updateTime);
                         values_map["updated_time"] = std::to_string(retInfo.updateTime);
                         values_map.emplace("name", preset.name);
-                        CXCloudDataCenter::getInstance().updateUserCloudPresets(preset.name, values_map);
+                        CXCloudDataCenter::getInstance().updateUserCloudPresets(preset.name, preset.setting_id, values_map);
                         nRet = 1;
                     }
                 }
@@ -424,7 +429,7 @@ int SyncUserPresets::doCheckNeedSyncFilamentToCXCloud()
                                                                        retInfo.updateTime);
                         values_map["updated_time"] = std::to_string(retInfo.updateTime);
                         values_map.emplace("name", preset.name);
-                        CXCloudDataCenter::getInstance().updateUserCloudPresets(preset.name, values_map);
+                        CXCloudDataCenter::getInstance().updateUserCloudPresets(preset.name, preset.setting_id, values_map);
                         nRet = 1;
                     }
                 }
@@ -519,7 +524,7 @@ int SyncUserPresets::doCheckNeedSyncProcessToCXCloud()
                                                                         retInfo.updateTime);
                         values_map["updated_time"] = std::to_string(retInfo.updateTime);
                         values_map.emplace("name", preset.name);
-                        CXCloudDataCenter::getInstance().updateUserCloudPresets(preset.name, values_map);
+                        CXCloudDataCenter::getInstance().updateUserCloudPresets(preset.name, preset.setting_id, values_map);
                         nRet = 1;
                     }
                 }

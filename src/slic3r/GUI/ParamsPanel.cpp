@@ -699,26 +699,6 @@ void ParamsPanel::create_layout_printerAndFilament()
         //m_left_sizer->Add( m_top_panel, 0, wxEXPAND );
     }
 
-    if (m_tab_print) {
-        m_left_sizer->Add(m_tab_print, 0, wxEXPAND);
-    }
-
-    if (m_tab_print_plate) {
-        m_left_sizer->Add(m_tab_print_plate, 0, wxEXPAND);
-    }
-
-    if (m_tab_print_object) {
-        m_left_sizer->Add(m_tab_print_object, 0, wxEXPAND);
-    }
-
-    if (m_tab_print_part) {
-        m_left_sizer->Add(m_tab_print_part, 0, wxEXPAND);
-    }
-
-    if (m_tab_print_layer) {
-        m_left_sizer->Add(m_tab_print_layer, 0, wxEXPAND);	
-    }
-
     {
         const std::deque<Preset>& presets = wxGetApp().preset_bundle->printers.get_presets();
         size_t count = wxGetApp().preset_bundle->printers.num_default_presets();
@@ -743,10 +723,13 @@ void ParamsPanel::create_layout_printerAndFilament()
         });
 
         m_preset_listBox->Bind(wxEVT_TREE_SEL_CHANGED, [this](wxTreeEvent& event) {
+            if (!m_IsNeed) {
+                m_IsNeed = false;
+                return;
+            }
             wxTreeItemId item = event.GetItem();
 
             if (item.IsOk()) {
-                refreshCurTreeItem(false);
                 MyTreeItemData* data       = dynamic_cast<MyTreeItemData*>(m_preset_listBox->GetItemData(item));
                 if (!data)
                 {
@@ -754,23 +737,27 @@ void ParamsPanel::create_layout_printerAndFilament()
                 }
                 wxString        itemString = data->GetData();
 
-                wxString    str        = itemString.Mid(0, 2);
-                wxString    str1       = str == "* " ? itemString.Mid(2, -1) : itemString;
-                std::string presetName = std::string(str1.ToUTF8().data());
-                if (presetName == m_curPreset)
-                    return;
-
-                m_curPreset = itemString;
-                m_curItem = item;
-                if (itemString == _L("User presets") || itemString == _L("System presets") || itemString == _L("Project presets"))
+                if (itemString == _L("User presets") || itemString == _L("System presets") || itemString == _L("Project presets") 
+                    || itemString == m_curPreset)
                 {
                     return;
                 }
-                
+
+                bool optRes = false;
                 if (m_ws == WS_PRINTER)
-                    dynamic_cast<TabPrinter*>(m_tab_printer)->changedSelectPrint(into_u8(itemString));
+                    optRes = dynamic_cast<TabPrinter*>(m_tab_printer)->changedSelectPrint(into_u8(itemString));
                 else
-                    dynamic_cast<TabFilament*>(m_tab_filament)->changedSelectFilament(into_u8(itemString));
+                    optRes = dynamic_cast<TabFilament*>(m_tab_filament)->changedSelectFilament(into_u8(itemString));
+
+                if (optRes)
+                {
+                    m_IsNeed    = true;
+                    m_curPreset = itemString;
+                } 
+                else 
+                {
+                    SelectRowByString(m_curPreset);
+                }
 
             }
             updateItemState();
@@ -1388,6 +1375,8 @@ void ParamsPanel::OnToggled(wxCommandEvent& event)
     if (m_mode_view && m_mode_view->GetId() == event.GetId()) {
         m_mode_view->updateBitmapHover();
     }
+    m_page_view->Update();
+    m_page_view->Refresh();
 }
 
 void ParamsPanel::OnToggledImageTooltip(wxCommandEvent& event)
@@ -1678,17 +1667,24 @@ void ParamsPanel::refreshCurTreeItem(bool isDirty)
         return;
     }
 
-    // 更新 m_curPreset
-    m_curPreset = itemName;
-
     // 检查 m_preset_listBox 和 m_curItem 是否有效
-    if (m_preset_listBox && m_curItem.IsOk()) {
+    wxTreeItemId curItem = getItemIdByName(m_curPreset);
+    if (m_preset_listBox && curItem.IsOk()) {
         wxString ellipsizedText = wxControl::Ellipsize(itemName, wxClientDC(this), wxELLIPSIZE_MIDDLE, FromDIP(200));
-        m_preset_listBox->SetItemText(m_curItem, ellipsizedText);
+        MyTreeItemData* data           = dynamic_cast<MyTreeItemData*>(m_preset_listBox->GetItemData(curItem));
+        if (!data) {
+            return;
+        }
+        data->setData(itemName);
+        m_preset_listBox->SetItemText(curItem, ellipsizedText);
+        wxTreeItemId curItem = getItemIdByName(itemName);
         m_preset_listBox->Refresh();
         m_preset_listBox->Update();
         m_preset_listBox->UpdateWindowUI();
     }
+
+    // 更新 m_curPreset
+    m_curPreset = itemName;
 
     // 刷新当前窗口
     Refresh();
@@ -2661,7 +2657,7 @@ void ParamsPanel::updatePresetsList(const std::vector<wxString>& systemList, con
         return;
     m_preset_listBox->DeleteAllItems();
     m_preset_listBox->SetIndent(0);
-    m_curItem = wxTreeItemId();
+
     wxTreeItemId rootId = m_preset_listBox->AddRoot("Root");
 
     if (projectList.size()) {
@@ -2751,34 +2747,36 @@ std::string ParamsPanel::getPresetType(Preset preset)
     }
     return presetType;
 }
-
-void ParamsPanel::SelectRowByString(const wxString& text)
+wxTreeItemId ParamsPanel::getItemIdByName(const wxString& name)
 {
     // 从根节点开始遍历
     wxTreeItemId      rootItem = m_preset_listBox->GetRootItem();
     wxTreeItemIdValue cookie;
     wxTreeItemId      child = m_preset_listBox->GetFirstChild(rootItem, cookie);
 
-    while (child.IsOk()) {
-        if (SelectRowRecursive(child, text)) {
-            break;
+    while (child.IsOk()) 
+    {
+        wxTreeItemId findItem = SelectRowRecursive(child, name);
+        if (findItem.IsOk()) 
+        {
+            return findItem;
         }
         child = m_preset_listBox->GetNextChild(rootItem, cookie);
     }
+
+    return wxTreeItemId();
 }
 
-bool ParamsPanel::SelectRowRecursive(const wxTreeItemId& item, const wxString& text)
+wxTreeItemId ParamsPanel::SelectRowRecursive(const wxTreeItemId& item, const wxString& text)
 {
     // 获取当前节点的文本
-    MyTreeItemData* data     = dynamic_cast<MyTreeItemData*>(m_preset_listBox->GetItemData(item));
+    MyTreeItemData* data = dynamic_cast<MyTreeItemData*>(m_preset_listBox->GetItemData(item));
     if (!data)
-        return false;
-    wxString        itemText = data->GetData();
+        return wxTreeItemId();
 
+    wxString itemText = data->GetData();
     if (itemText == text) {
-        m_preset_listBox->SelectItem(item);    // 选中节点
-        m_preset_listBox->EnsureVisible(item); // 确保节点可见
-        return true;
+        return item;
     }
 
     // 遍历子节点
@@ -2786,12 +2784,25 @@ bool ParamsPanel::SelectRowRecursive(const wxTreeItemId& item, const wxString& t
     wxTreeItemId      child = m_preset_listBox->GetFirstChild(item, cookie);
 
     while (child.IsOk()) {
-        if (SelectRowRecursive(child, text)) {
-            return true;
+        wxTreeItemId findItem = SelectRowRecursive(child, text);
+        if (findItem.IsOk()) {
+            return findItem;
         }
         child = m_preset_listBox->GetNextChild(item, cookie);
     }
 
+    return wxTreeItemId();
+}
+
+bool ParamsPanel::SelectRowByString(const wxString& text) 
+{
+    wxTreeItemId itemId = getItemIdByName(text);
+    if (itemId.IsOk()) {
+        m_preset_listBox->SelectItem(itemId);
+        m_preset_listBox->ExpandAll();
+        m_preset_listBox->EnsureVisible(itemId);
+        return true;
+    }
     return false;
 }
 
@@ -3005,8 +3016,8 @@ void ParamsPanel::layoutOther()
     m_h_tabbar_printer = nullptr;//new HTabbarPrinter(this, Preset::Type::TYPE_PRINTER, wxGetApp().preset_bundle);
     m_v_tabbar_printer = nullptr;//new VTabbarPrinter(this, Preset::Type::TYPE_PRINTER, wxGetApp().preset_bundle);
 
-    m_tabbar_printer = new TabbarCtrlPrinter(this, m_h_tabbar_printer, m_v_tabbar_printer, wxGetApp().preset_bundle);
-    m_tabbar_filament = new TabbarCtrlFilament(this, m_h_tabbar_printer, m_v_tabbar_printer, wxGetApp().preset_bundle);
+    m_tabbar_printer  = nullptr;//new TabbarCtrlPrinter(this, m_h_tabbar_printer, m_v_tabbar_printer, wxGetApp().preset_bundle);
+    m_tabbar_filament = nullptr;//new TabbarCtrlFilament(this, m_h_tabbar_printer, m_v_tabbar_printer, wxGetApp().preset_bundle);
 
     StateColor btn_bg_white(std::pair<wxColour, int>(wxColour(206, 206, 206), StateColor::Pressed),
         std::pair<wxColour, int>(wxColour(238, 238, 238), StateColor::Hovered),

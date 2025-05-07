@@ -72,7 +72,7 @@
     ],
     "filament_toolchange_delay": "0",
     "filament_type": [
-        "PETG-CF"
+        "PETG-GF"
     ],
     "filament_unload_time": "0",
     "filament_unloading_speed": "90",
@@ -87,6 +87,7 @@
     "full_fan_speed_layer": "0",
     "hot_plate_temp": "70",
     "hot_plate_temp_initial_layer": "70",
+    "material_flow_dependent_temperature": "0",
     "nozzle_temperature": "270",
     "nozzle_temperature_initial_layer": "270",
     "nozzle_temperature_range_high": "270",

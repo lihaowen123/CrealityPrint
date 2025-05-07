@@ -329,6 +329,7 @@ public:
         float scale;
 
         float width;
+        float limit_width{-1.0f}; // 如果是小于零则不限制，否则限制最大宽度
         float height;
         bool dirty;
         float scroll;
@@ -447,6 +448,8 @@ public:
     void set_horizontal_expand(bool b_h_expand=true){ m_horizontal_expand=b_h_expand; }
 
     Vec2f get_separator_position(int separator_idx);
+
+    void set_limit_width(float w) { m_layout.limit_width = w; };
 
     void  set_scroll(float scroll) { m_layout.scroll = scroll; }
     float get_scroll() { return m_layout.scroll; }

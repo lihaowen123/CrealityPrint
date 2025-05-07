@@ -297,6 +297,12 @@ void KBShortcutsDialog::fill_shortcuts()
             {ctrl + "Y", L("Redo")},
             {L("Space"), L("Select the object/part and press space to change the name")},
             {L("Mouse click"), L("Select the object/part and mouse click to change the name")},
+            {L("Alt"), L("Mouse clicks can select parts in the assembly model")},
+            #ifdef __APPLE__
+                {L("F5"), L("Center selected")},
+            #else
+		        {L("F3"), L("Center selected")},
+            #endif
         };
         m_full_shortcuts.push_back({ { _L("Objects List"), "" }, object_list_shortcuts });
     }

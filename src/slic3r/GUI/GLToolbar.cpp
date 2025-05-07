@@ -1561,6 +1561,9 @@ void GLToolbar::render_horizontal(const GLCanvas3D& parent, GLToolbarItem::EType
     float right = bg_left + width;
     if (type == GLToolbarItem::SeparatorLine)
         right = bg_left + width * 0.5;
+    if (m_layout.limit_width > 0.0f) {
+        right = bg_left + 2.0f * m_layout.limit_width * inv_cnv_w;
+    }
     const float bottom = top - height;
 
     render_background(bg_left, top, m_horizontal_expand ? 1.0 : right, bottom, border_w, border_h);
@@ -1589,7 +1592,9 @@ void GLToolbar::render_horizontal(const GLCanvas3D& parent, GLToolbarItem::EType
                 if (left + icon_stride <= bg_left)
                 {
 
-
+                } else if (left > right) 
+                {
+                    
                 } else {
                     
                     std::string filename        = item->get_icon_filename();
@@ -1611,7 +1616,7 @@ void GLToolbar::render_horizontal(const GLCanvas3D& parent, GLToolbarItem::EType
                         }
 
                         
-                        float part = (left + icon_stride - bg_left) / icon_stride;
+                        float part = (left + icons_size_x - bg_left) / icons_size_x;
                         float uv_width = uv.right_bottom.u - uv.left_bottom.u;
                         float new_left   = uv.right_bottom.u - uv_width * part;
                         uv.left_bottom.u = new_left;
@@ -1619,7 +1624,26 @@ void GLToolbar::render_horizontal(const GLCanvas3D& parent, GLToolbarItem::EType
 
                         item->render(tex_id, bg_left, left + icons_size_x, top - icons_size_y, top, uv);
 
+                    } else if (left < right && left + icons_size_x > right) {
+                        //render left part of the item
+                        
+                        GLTexture::Quad_UVs uv;
+                        if (base && idx == GLToolbarItem::EState::Pressed) {
+                            uv = item->get_uvs_with_render_state(idx, (unsigned int) tex_width, (unsigned int) tex_height,
+                                                                 (unsigned int) (m_layout.icons_size * m_layout.scale));
+                        } else {
+                            uv = item->get_uvs((unsigned int) tex_width, (unsigned int) tex_height,
+                                               (unsigned int) (m_layout.icons_size * m_layout.scale));
+                        }
 
+                        float part        = (right - left) / icons_size_x;
+                        float uv_width   = uv.right_bottom.u - uv.left_bottom.u;
+                        float new_right   = uv.left_bottom.u + uv_width * part;
+                        uv.right_bottom.u = new_right;
+                        uv.right_top.u    = new_right;
+
+                        item->render(tex_id, left, left + part * icons_size_x, top - icons_size_y, top, uv);
+                    
                     } else {
                         if (base && idx == GLToolbarItem::EState::Pressed) {
                             item->render(tex_id, left, left + icons_size_x, top - icons_size_y, top, idx, (unsigned int) tex_width,

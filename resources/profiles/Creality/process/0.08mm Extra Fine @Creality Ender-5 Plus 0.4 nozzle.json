@@ -104,7 +104,7 @@
     "minimum_sparse_infill_area": "15",
     "minimum_support_area": "5",
     "only_one_wall_first_layer": "0",
-    "only_one_wall_top": "0",
+    "only_one_wall_top": "1",
     "ooze_prevention": "0",
     "outer_wall_acceleration": "500",
     "outer_wall_jerk": "10",

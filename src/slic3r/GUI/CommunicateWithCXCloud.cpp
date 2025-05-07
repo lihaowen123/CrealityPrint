@@ -24,8 +24,12 @@ CXCloudDataCenter& CXCloudDataCenter::getInstance()
     return instance;
 }
 
-const std::map<std::string, std::map<std::string, std::string>>& CXCloudDataCenter::getUserCloudPresets() {
-    return m_mapUserCloudPresets;
+std::map<std::string, std::map<std::string, std::string>> CXCloudDataCenter::getUserCloudPresets() {
+    std::map<std::string, std::map<std::string, std::string>> mapUserCloudPresets;
+    m_mutexUserCloudPresets.lock();
+    mapUserCloudPresets = m_mapUserCloudPresets;
+    m_mutexUserCloudPresets.unlock();
+    return std::move(mapUserCloudPresets);
 }
 
 static std::string getPresetValue(const std::map<std::string, std::string>& mapPresetValue) { 
@@ -63,6 +67,7 @@ void CXCloudDataCenter::setUserCloudPresets(const std::string&                  
                                             const std::string&                        settingID,
                                             const std::map<std::string, std::string>& mapPresetValue)
 {
+    m_mutexUserCloudPresets.lock();
     auto iter = m_mapUserCloudPresets.find(presetName);
     if (iter == m_mapUserCloudPresets.end()){
         m_mapUserCloudPresets[presetName] = mapPresetValue;
@@ -73,18 +78,28 @@ void CXCloudDataCenter::setUserCloudPresets(const std::string&                  
         m_mapUserCloudPresets[presetName]    = mapPresetValue;
         m_mapSettingID2PresetName[settingID] = presetName;
     }
+    m_mutexUserCloudPresets.unlock();
 }
 
 void CXCloudDataCenter::cleanUserCloudPresets() { 
+    m_mutexUserCloudPresets.lock();
     m_mapUserCloudPresets.clear();
     m_mapSettingID2PresetName.clear();
+    m_mutexUserCloudPresets.unlock();
 }
 
-void CXCloudDataCenter::updateUserCloudPresets(const std::string& presetName, const std::map<std::string, std::string>& mapPresetValue) {
+void CXCloudDataCenter::updateUserCloudPresets(const std::string& presetName, const std::string& settingID, const std::map<std::string, std::string>& mapPresetValue) {
+    m_mutexUserCloudPresets.lock();
     auto iter = m_mapUserCloudPresets.find(presetName);
     if (iter != m_mapUserCloudPresets.end()) {
         iter->second = mapPresetValue;
+    } else {
+        // BOOST_LOG_TRIVIAL(warning) << "SyncUserPresets CXCloudDataCenter setUserCloudPresets has same preset data.oldData="
+        //                           << getPresetValue(iter->second) << ",newData=" << getPresetValue(mapPresetValue);
+        m_mapUserCloudPresets[presetName]    = mapPresetValue;
+        m_mapSettingID2PresetName[settingID] = presetName;
     }
+    m_mutexUserCloudPresets.unlock();
 }
 
 int CXCloudDataCenter::deleteUserPresetBySettingID(const std::string& settingID) { 

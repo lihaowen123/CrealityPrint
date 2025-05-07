@@ -779,5 +779,8 @@ msgstr "Feed issue, filament failed to exit extruder.Please resolve and click "R
 msgid "During device self-test, printing and sending files are not supported"
 msgstr "During device self-test, printing and sending files are not supported"
 
-msgid "The current printer's material rack consumables do not exist. Do you want to continue printing"
-msgstr "The current printer's material rack consumables do not exist. Do you want to continue printing"
+msgid "The current printer's material rack consumables do not exist. Do you want to continue printing?"
+msgstr "The current printer's material rack consumables do not exist. Do you want to continue printing?"
+
+msgid "The machine consumables do not match the printed file. Please check and restart printing"
+msgstr "The machine consumables do not match the printed file. Please check and restart printing"

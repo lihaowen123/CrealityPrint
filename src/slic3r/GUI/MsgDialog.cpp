@@ -26,8 +26,7 @@
 
 namespace Slic3r {
 namespace GUI {
-
-MsgDialog::MsgDialog(wxWindow *parent, const wxString &title, const wxString &headline, long style, wxBitmap bitmap)
+MsgDialog::MsgDialog(wxWindow* parent, const wxString& title, const wxString& headline, long style, wxBitmap bitmap, bool useApplyStyle /*= true*/)
 	: DPIDialog(parent ? parent : dynamic_cast<wxWindow*>(wxGetApp().mainframe), wxID_ANY, title, wxDefaultPosition, wxSize(360, -1),wxDEFAULT_DIALOG_STYLE)
 	, boldfont(wxGetApp().normal_font())
 	, content_sizer(new wxBoxSizer(wxVERTICAL))
@@ -63,8 +62,8 @@ MsgDialog::MsgDialog(wxWindow *parent, const wxString &title, const wxString &he
     btn_sizer->Add(m_dsa_sizer, 0, wxEXPAND,0);
     btn_sizer->Add(0, 0, 1, wxEXPAND, 5);
     main_sizer->Add(btn_sizer, 0, wxBOTTOM | wxRIGHT | wxEXPAND, BORDER);
-
-    apply_style(style);
+    if (useApplyStyle)
+        apply_style(style);
 	SetSizerAndFit(main_sizer);
     wxGetApp().UpdateDlgDarkUI(this);
 }
@@ -662,6 +661,29 @@ wxBoxSizer *Newer3mfVersionDialog::get_btn_sizer()
         EndModal(wxID_OK);
     });
     return horizontal_sizer;
+}
+
+AutoMappingLoginMsgDialog::AutoMappingLoginMsgDialog(wxWindow*       parent,
+                                                     const wxString& message,
+                                                     const wxString& caption /* = wxEmptyString*/,
+                                                     long            style /* = wxOK*/)
+    : MsgDialog(parent, caption.IsEmpty() ? wxString::Format(_L("%s info"), SLIC3R_APP_FULL_NAME) : caption, wxEmptyString, style, wxNullBitmap, false)
+{
+    apply_style(style);
+    add_msg_content(this, content_sizer, message);
+    finalize();
+    wxGetApp().UpdateDlgDarkUI(this);
+}
+
+void AutoMappingLoginMsgDialog::apply_style(long style) {
+    if (style & wxOK) add_button(wxID_OK, true, _L("OK"));
+    if (style & wxCANCEL) add_button(wxID_CANCEL, false, _L("Cancel"));
+    if (style & wxYES) add_button(wxID_YES, true, _L("Login"));
+
+    logo->SetBitmap( create_scaled_bitmap(style & wxAPPLY        ? "completed" :
+                                          style & wxICON_WARNING        ? "exclamation" : // ORCA "exclamation" used for dialogs "obj_warning" used for 16x16 areas
+                                          style & wxICON_INFORMATION    ? "info"        :
+                                          style & wxICON_QUESTION       ? "question"    : "Creality3D", this, 64, style & wxICON_ERROR));
 }
 
 } // namespace GUI

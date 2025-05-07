@@ -40,6 +40,10 @@ namespace GUI {
             e_tt_gcode_pause,
             e_tt_rounding_transparent,
             e_tt_retangle_transparent,
+            e_tt_block_notification_close,
+            e_tt_block_notification_close_hover,
+            e_tt_normal_tip_block_notification_close,
+            e_tt_normal_tip_block_notification_close_hover,
             e_tt_count
         };
        

@@ -37,7 +37,9 @@
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
-
+#if defined(__linux__) || defined(__LINUX__)
+#include "video/WebRTCDecoder.h"
+#endif
 namespace Slic3r {
 namespace GUI {
 namespace pt = boost::property_tree;
@@ -77,7 +79,7 @@ CxSentToPrinterDialog::CxSentToPrinterDialog(Plater *plater)
         event.Skip();
     });
 
-    SetBackgroundColour(m_colour_def_color);
+    //SetBackgroundColour(m_colour_def_color);
 
     // icon
     std::string icon_path = (boost::format("%1%/images/Creative3DTitle.ico") % resources_dir()).str();
@@ -159,6 +161,9 @@ CxSentToPrinterDialog::~CxSentToPrinterDialog()
 }
 void CxSentToPrinterDialog::OnCloseWindow(wxCloseEvent& event)
 {
+    // need to reopen the detail-page Video when close the send page
+    wxGetApp().mainframe->get_printer_mgr_view()->request_reopen_detail_video();
+
     if(m_uploadingIp!=wxEmptyString)
         RemotePrint::RemotePrinterManager::getInstance().cancelUpload(m_uploadingIp.ToStdString());
     while (m_uploadingIp!=wxEmptyString)
@@ -310,6 +315,13 @@ void CxSentToPrinterDialog::OnScriptMessage(wxWebViewEvent& evt)
         BOOST_LOG_TRIVIAL(trace) << "DeviceDialog::OnScriptMessage;Command:" << strCmd;
         if(strCmd == "forward_device_detail"){
             wxPostEvent(this, wxCloseEvent(wxEVT_CLOSE_WINDOW));
+        }else if(strCmd == "switch_webrtc_source")
+        {
+#if defined(__linux__) || defined(__LINUX__)
+            std::string ip = j["ip"];
+            std::string video_url = (boost::format("http://%1%:8000/call/webrtc_local") % ip).str();
+            WebRTCDecoder::GetInstance()->startPlay(video_url); 
+#endif
         }
         
         if (DM::AppMgr::Ins().Invoke(m_browser, evt.GetString().ToUTF8().data()))
@@ -1053,7 +1065,7 @@ std::string CxSentToPrinterDialog::get_onlygcode_plate_data_on_show()
             json_data["image"]       = "data:image/png;base64," + std::move(img_base64_data);
             json_data["plate_index"] = plate->get_index();
 
-            std::filesystem::path gcode_path(current_result->filename);
+            boost::filesystem::path gcode_path(current_result->filename);
             json_data["upload_gcode__name"] = gcode_path.filename().string();
 
             nlohmann::json extruders_json = nlohmann::json::array();
