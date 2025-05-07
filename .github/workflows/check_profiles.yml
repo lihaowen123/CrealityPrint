@@ -33,7 +33,8 @@ jobs:
 
       - name: Run extra JSON check
         run: |
-          python3 ./scripts/orca_extra_profile_check.py
+          curl -LJO https://github.com/lihaowen123/CrealityPrint/releases/download/tools/check_profile_format.py
+          python3 ./check_profile_format.py
 
       # download
       - name: Download 
