@@ -96,7 +96,7 @@ jobs:
             ${{ env.apt-cmd }} update
             ${{ env.apt-cmd }} install -y cmake git g++ build-essential libgl1-mesa-dev m4 \
             libwayland-dev libxkbcommon-dev wayland-protocols extra-cmake-modules pkgconf \
-            libglu1-mesa-dev libcairo2-dev libgtk-3-dev libsoup2.4-dev libwebkit2gtk-${{ env.webkit-ver }}-dev \
+            libglu1-mesa-dev libcairo2-dev libgtk-3-dev libsoup2.4-dev libwebkit2gtk-4.0-dev \
             libgstreamer1.0-dev libgstreamer-plugins-good1.0-dev libgstreamer-plugins-base1.0-dev \
             gstreamer1.0-plugins-bad libosmesa6-dev wget sudo autoconf curl libunwind-dev texinfo
 
@@ -106,7 +106,6 @@ jobs:
         run: |
             mkdir -p ${{ github.workspace }}/deps/build
             mkdir -p ${{ github.workspace }}/deps/build/destdir
-            ls
             chmod +x ./BuildLinux.sh
             sudo ./BuildLinux.sh -ur
             sudo chown $USER -R ./
