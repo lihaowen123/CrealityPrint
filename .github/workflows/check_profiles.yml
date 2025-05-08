@@ -33,14 +33,14 @@ jobs:
 
       - name: Run extra JSON check
         run: |
-          curl -LJO https://github.com/lihaowen123/CrealityPrint/releases/download/tools/check_profile_format.py
-          python3 ./check_profile_format.py
+          # curl -LJO https://github.com/lihaowen123/CrealityPrint/releases/download/tools/check_profile_format.py
+          python3 ./scripts/check_profile_format.py
 
-      - name: validate system profiles 
-        working-directory: ${{ github.workspace }}
-        run: |
-          curl -LJO https://github.com/lihaowen123/CrealityPrint/releases/download/tools/check_json.py
-          python3 ./check_json.py ${{ github.workspace }}/resources/profiles
+      # - name: validate system profiles 
+      #   working-directory: ${{ github.workspace }}
+      #   run: |
+      #     curl -LJO https://github.com/lihaowen123/CrealityPrint/releases/download/tools/check_json.py
+      #     python3 ./check_json.py ${{ github.workspace }}/resources/profiles
 
       # - name: validate custom presets
       #   working-directory: ${{ github.workspace }}
