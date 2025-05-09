@@ -43,8 +43,8 @@ jobs:
 
       - uses: lukka/get-cmake@latest
         with:
-          cmakeVersion: "~3.22.0"  # use most recent 3.28.x version
-          # cmakeVersion: "~3.28.0"  # use most recent 3.28.x version
+          cmakeVersion: "~3.28.0"  # use most recent 3.28.x version
+          # cmakeVersion: "~3.22.0"  # use most recent 3.28.x version
 
       # - name: setup dev on Windows
       #   if: inputs.os == 'windows-latest'
