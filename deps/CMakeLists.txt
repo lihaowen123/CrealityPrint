@@ -355,7 +355,7 @@ include(breakpad/breakpad.cmake)
 message(STATUS "setting dep_list")
 set(_dep_list
     dep_wxWidgets
-    # dep_Boost
+    dep_Boost
     dep_TBB
     ${OPENSSL_PKG}
     ${CURL_PKG}
