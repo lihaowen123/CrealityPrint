@@ -348,10 +348,10 @@ if(NOT FREETYPE_FOUND)
     set(FREETYPE_PKG "dep_FREETYPE") 
 endif()
 
-# include(OCCT/OCCT.cmake)
-# include(OpenCV/OpenCV.cmake)
-# include(aliyun-oss-cpp-sdk/aliyun-oss-cpp-sdk.cmake)
-# include(breakpad/breakpad.cmake)
+include(OCCT/OCCT.cmake)
+include(OpenCV/OpenCV.cmake)
+include(aliyun-oss-cpp-sdk/aliyun-oss-cpp-sdk.cmake)
+include(breakpad/breakpad.cmake)
 message(STATUS "setting dep_list")
 set(_dep_list
     dep_wxWidgets
