@@ -43,9 +43,7 @@ jobs:
 
       - uses: lukka/get-cmake@latest
         with:
-          cmakeVersion: "~3.23.0"  # use most recent 3.28.x version
-          # cmakeVersion: "~3.28.0"  # use most recent 3.28.x version
-          # cmakeVersion: "~3.22.0"  # use most recent 3.28.x version
+          cmakeVersion: "~3.28.0"  # use most recent 3.28.x version
 
       # - name: setup dev on Windows
       #   if: inputs.os == 'windows-latest'
@@ -140,14 +138,14 @@ jobs:
           name: OrcaSlicer_dep_ubuntu_${{ env.ubuntu-ver }}_${{ env.date }}
           path: ${{ github.workspace }}/deps/build/OrcaSlicer_dep_ubuntu_*.tar.gz
 
-  build_orca:
-    name: Build OrcaSlicer
-    needs: [build_deps]
-    if: ${{ !cancelled() && !inputs.build-deps-only && (inputs.valid-cache == true && needs.build_deps.result == 'skipped') || (inputs.valid-cache != true && success()) }}
-    uses: ./.github/workflows/build_orca.yml
-    with:
-      cache-key: ${{ inputs.cache-key }}
-      cache-path: ${{ inputs.cache-path }}
-      os: ${{ inputs.os }}
-      arch: ${{ inputs.arch }}
-    secrets: inherit
+  # build_orca:
+  #   name: Build OrcaSlicer
+  #   needs: [build_deps]
+  #   if: ${{ !cancelled() && !inputs.build-deps-only && (inputs.valid-cache == true && needs.build_deps.result == 'skipped') || (inputs.valid-cache != true && success()) }}
+  #   uses: ./.github/workflows/build_orca.yml
+  #   with:
+  #     cache-key: ${{ inputs.cache-key }}
+  #     cache-path: ${{ inputs.cache-path }}
+  #     os: ${{ inputs.os }}
+  #     arch: ${{ inputs.arch }}
+  #   secrets: inherit
