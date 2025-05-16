@@ -367,6 +367,7 @@ set(_dep_list
     dep_CGAL
     dep_GLFW
     dep_OCCT
+    ${JPEG_PKG}
     ${FREETYPE_PKG}
     ${PNG_PKG}
     ${ZLIB_PKG}
