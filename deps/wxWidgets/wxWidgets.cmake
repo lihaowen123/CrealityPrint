@@ -24,8 +24,8 @@ endif ()
 
 orcaslicer_add_cmake_project(
     wxWidgets
-    URL "https://github.com/CrealityOfficial/Orca-deps-wxWidgets/archive/refs/tags/v1.0.0.tar.gz"
-    URL_HASH SHA256=74089054448d887c1b551ac98f4b46fa8960a5168df48aa77700c7a58071148c
+    GIT_REPOSITORY "https://github.com/SoftFever/Orca-deps-wxWidgets"
+    GIT_SHALLOW ON
     DEPENDS ${PNG_PKG} ${ZLIB_PKG} ${EXPAT_PKG} ${TIFF_PKG} ${JPEG_PKG}
     CMAKE_ARGS
         -DwxBUILD_PRECOMP=ON
