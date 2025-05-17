@@ -294,10 +294,10 @@ endif()
 
 # flatpak builds wxwidgets separately 
 set(WXWIDGETS_PKG "")
-# if (NOT FLATPAK)
-include(wxWidgets/wxWidgets.cmake)
-set(WXWIDGETS_PKG "dep_wxWidgets")
-# endif()
+if (NOT FLATPAK)
+    include(wxWidgets/wxWidgets.cmake)
+    set(WXWIDGETS_PKG "dep_wxWidgets")
+endif()
 message(STATUS "setting wxwidgets")
 
 set(DEP_Boost_COMPONENTS system iostreams filesystem thread log locale regex date_time)
@@ -351,28 +351,28 @@ include(aliyun-oss-cpp-sdk/aliyun-oss-cpp-sdk.cmake)
 include(breakpad/breakpad.cmake)
 message(STATUS "setting dep_list")
 set(_dep_list
-    # dep_Boost
-    # dep_TBB
-    # ${OPENSSL_PKG}
-    # ${CURL_PKG}
-    # dep_Cereal
-    # dep_NLopt
-    # dep_OpenVDB
-    # dep_OpenCSG
-    # dep_OpenCV
-    # dep_CGAL
-    # dep_GLFW
-    # # dep_OCCT
+    dep_Boost
+    dep_TBB
+    ${OPENSSL_PKG}
+    ${CURL_PKG}
+    dep_Cereal
+    dep_NLopt
+    dep_OpenVDB
+    dep_OpenCSG
+    dep_OpenCV
+    dep_CGAL
+    dep_GLFW
+    dep_OCCT
     ${JPEG_PKG}
     ${FREETYPE_PKG}
     ${TIFF_PKG}
     ${PNG_PKG}
     ${ZLIB_PKG}
     ${EXPAT_PKG}
-    dep_wxWidgets
-    # dep_OSS
-    # dep_BREAKPAD
-	# dep_Assimp
+    ${WXWIDGETS_PKG}
+    dep_OSS
+    dep_BREAKPAD
+	dep_Assimp
     )
 
 if (MSVC)
