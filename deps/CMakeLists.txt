@@ -260,14 +260,6 @@ if(FLATPAK)
     find_package(CURL)
 endif()
 
-# flatpak builds wxwidgets separately 
-set(WXWIDGETS_PKG "")
-# if (NOT FLATPAK)
-include(wxWidgets/wxWidgets.cmake)
-set(WXWIDGETS_PKG "dep_wxWidgets")
-# endif()
-message(STATUS "setting wxwidgets")
-
 set(ZLIB_PKG "")
 if (NOT ZLIB_FOUND) 
     include(ZLIB/ZLIB.cmake)
@@ -284,6 +276,29 @@ if (NOT EXPAT_FOUND)
     include(EXPAT/EXPAT.cmake)
     set(EXPAT_PKG dep_EXPAT)
 endif ()
+set(JPEG_PKG "")
+if (NOT JPEG_FOUND)
+    include(JPEG/JPEG.cmake)
+    set(JPEG_PKG dep_JPEG)
+endif()
+set(TIFF_PKG "")
+if (NOT TIFF_FOUND)
+    include(TIFF/TIFF.cmake)
+    set(TIFF_PKG "dep_TIFF")
+endif()
+set(FREETYPE_PKG "")
+if(NOT FREETYPE_FOUND)
+    include(FREETYPE/FREETYPE.cmake)
+    set(FREETYPE_PKG "dep_FREETYPE") 
+endif()
+
+# flatpak builds wxwidgets separately 
+set(WXWIDGETS_PKG "")
+# if (NOT FLATPAK)
+include(wxWidgets/wxWidgets.cmake)
+set(WXWIDGETS_PKG "dep_wxWidgets")
+# endif()
+message(STATUS "setting wxwidgets")
 
 set(DEP_Boost_COMPONENTS system iostreams filesystem thread log locale regex date_time)
 include(Boost/Boost.cmake)
@@ -330,31 +345,12 @@ if (NOT OPENSSL_FOUND OR NOT CURL_FOUND)
     set(CURL_PKG dep_CURL)
 endif ()
 
-set(JPEG_PKG "")
-if (NOT JPEG_FOUND)
-    include(JPEG/JPEG.cmake)
-    set(JPEG_PKG dep_JPEG)
-endif()
-
-set(TIFF_PKG "")
-if (NOT TIFF_FOUND)
-    include(TIFF/TIFF.cmake)
-    set(TIFF_PKG "dep_TIFF")
-endif()
-
-set(FREETYPE_PKG "")
-if(NOT FREETYPE_FOUND)
-    include(FREETYPE/FREETYPE.cmake)
-    set(FREETYPE_PKG "dep_FREETYPE") 
-endif()
-
 include(OCCT/OCCT.cmake)
 include(OpenCV/OpenCV.cmake)
 include(aliyun-oss-cpp-sdk/aliyun-oss-cpp-sdk.cmake)
 include(breakpad/breakpad.cmake)
 message(STATUS "setting dep_list")
 set(_dep_list
-    dep_wxWidgets
     # dep_Boost
     # dep_TBB
     # ${OPENSSL_PKG}
@@ -373,6 +369,7 @@ set(_dep_list
     ${PNG_PKG}
     ${ZLIB_PKG}
     ${EXPAT_PKG}
+    dep_wxWidgets
     # dep_OSS
     # dep_BREAKPAD
 	# dep_Assimp
