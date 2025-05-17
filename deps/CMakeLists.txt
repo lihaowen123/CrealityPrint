@@ -367,11 +367,12 @@ set(_dep_list
     # dep_CGAL
     # dep_GLFW
     # # dep_OCCT
-    # ${JPEG_PKG}
-    # ${FREETYPE_PKG}
-    # ${PNG_PKG}
-    # ${ZLIB_PKG}
-    # ${EXPAT_PKG}
+    ${JPEG_PKG}
+    ${FREETYPE_PKG}
+    ${TIFF_PKG}
+    ${PNG_PKG}
+    ${ZLIB_PKG}
+    ${EXPAT_PKG}
     # dep_OSS
     # dep_BREAKPAD
 	# dep_Assimp
