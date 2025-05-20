@@ -348,29 +348,56 @@ include(aliyun-oss-cpp-sdk/aliyun-oss-cpp-sdk.cmake)
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
   include(metartc/metartc.cmake)
 endif()
-include(breakpad/breakpad.cmake)
-set(_dep_list
-    dep_Boost
-    dep_TBB
-    ${OPENSSL_PKG}
-    ${CURL_PKG}
-    ${WXWIDGETS_PKG}
-    dep_Cereal
-    dep_NLopt
-    dep_OpenVDB
-    dep_OpenCSG
-    dep_OpenCV
-    dep_CGAL
-    dep_GLFW
-    dep_OCCT
-    ${FREETYPE_PKG}
-    ${PNG_PKG}
-    ${ZLIB_PKG}
-    ${EXPAT_PKG}
-    dep_OSS
-    dep_BREAKPAD
-	dep_Assimp
-    )
+if(ENABLE_BREAKPAD)
+    message(STATUS "Breakpad is enabled...")
+    add_definitions(-DUSE_BREAKPAD)
+    include(breakpad/breakpad.cmake)
+    set(_dep_list
+        dep_Boost
+        dep_TBB
+        ${OPENSSL_PKG}
+        ${CURL_PKG}
+        ${WXWIDGETS_PKG}
+        dep_Cereal
+        dep_NLopt
+        dep_OpenVDB
+        dep_OpenCSG
+        dep_OpenCV
+        dep_CGAL
+        dep_GLFW
+        dep_OCCT
+        ${FREETYPE_PKG}
+        ${PNG_PKG}
+        ${ZLIB_PKG}
+        ${EXPAT_PKG}
+        dep_OSS
+        dep_BREAKPAD
+        dep_Assimp
+        )
+else()
+    message(STATUS "Breakpad is disabled...")
+    set(_dep_list
+        dep_Boost
+        dep_TBB
+        ${OPENSSL_PKG}
+        ${CURL_PKG}
+        ${WXWIDGETS_PKG}
+        dep_Cereal
+        dep_NLopt
+        dep_OpenVDB
+        dep_OpenCSG
+        dep_OpenCV
+        dep_CGAL
+        dep_GLFW
+        dep_OCCT
+        ${FREETYPE_PKG}
+        ${PNG_PKG}
+        ${ZLIB_PKG}
+        ${EXPAT_PKG}
+        dep_OSS
+        dep_Assimp
+        )
+endif()
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 	list(APPEND _dep_list "dep_metartc")
 endif()
