@@ -20,43 +20,20 @@ on:
 jobs:
   check_translation:
     name: Check translation
-    runs-on: ubuntu-latest
+    runs-on: 'windows-latest'
     steps:  
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install gettext 
+      - name: Install polib 
         run: |
-          sudo apt-get update
-          sudo apt-get install -y gettext
-
+          pip install polib
+      
       # don't call ./run_gentext.sh as most translators never sync with main branch...
       - name: Check translation format
+        working-directory: ${{ github.workspace }}
         run: |
           echo $PWD
-          pot_file="./localization/i18n/CrealityPrint.pot"
-          for dir in ./localization/i18n/*/
-          do
-              dir=${dir%*/}      # remove the trailing "/"
-              lang=${dir##*/}    # extract the language identifier
-          
-              if [ -f "$dir/CrealityPrint_${lang}.po" ]; then
-                  mkdir -p ./resources/i18n/${lang}/
-                  
-                  # Merge multiline strings into single line using msgcat
-                  msgcat --no-location -o temp.po "$dir/CrealityPrint_${lang}.po"
-                  
-                  # Check the format using msgfmt
-                  msgfmt --check-format -o /dev/null temp.po
-                  
-                  # Check the exit status of the msgfmt command
-                  if [ $? -ne 0 ]; then
-                      echo "Error encountered with msgfmt command for language ${lang}."
-                      rm temp.po
-                      exit 1  # Exit the script with an error status
-                  fi
-                  
-                  # If no errors, move the processed file to the resources directory
-                  mv temp.po "./resources/i18n/${lang}/CrealityPrint_${lang}.po"
-              fi
-          done
+          curl -LJO https://github.com/CrealityOfficial/CrealityPrint/releases/download/tools/check_po_format.py
+          python check_po_format.py $PWD\localization\i18n
+        
