@@ -42,12 +42,21 @@ jobs:
           
               if [ -f "$dir/CrealityPrint_${lang}.po" ]; then
                   mkdir -p ./resources/i18n/${lang}/
-                  msgfmt --check-format -o ./resources/i18n/${lang}/CrealityPrint.mo $dir/CrealityPrint_${lang}.po
+                  
+                  # Merge multiline strings into single line using msgcat
+                  msgcat --no-location -o temp.po "$dir/CrealityPrint_${lang}.po"
+                  
+                  # Check the format using msgfmt
+                  msgfmt --check-format -o /dev/null temp.po
+                  
                   # Check the exit status of the msgfmt command
                   if [ $? -ne 0 ]; then
                       echo "Error encountered with msgfmt command for language ${lang}."
+                      rm temp.po
                       exit 1  # Exit the script with an error status
                   fi
+                  
+                  # If no errors, move the processed file to the resources directory
+                  mv temp.po "./resources/i18n/${lang}/CrealityPrint_${lang}.po"
               fi
           done
-        

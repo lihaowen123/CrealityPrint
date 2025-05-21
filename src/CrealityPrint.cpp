@@ -76,11 +76,15 @@ using namespace nlohmann;
 #include "BaseException.h"
 #include "CxMiniDump.h"
 #include "libslic3r/UnittestFlow.hpp"
-// #include "client/windows/handler/exception_handler.h"
+    #ifdef USE_BREAKPAD
+    #include "client/windows/handler/exception_handler.h"
+    #endif
 #endif
 
 #ifdef TARGET_OS_MAC
-    // #include "client/mac/handler/exception_handler.h"
+    #ifdef USE_BREAKPAD
+    #include "client/mac/handler/exception_handler.h"
+    #endif
 #endif
 #include "slic3r/GUI/PartPlate.hpp"
 #include "slic3r/GUI/BitmapCache.hpp"
@@ -102,7 +106,10 @@ using namespace nlohmann;
     #ifndef __STDC_FORMAT_MACROS
         #define __STDC_FORMAT_MACROS
     #endif
-    // #include "client/linux/handler/exception_handler.h"
+    
+    #ifdef USE_BREAKPAD
+    #include "client/linux/handler/exception_handler.h"
+    #endif
 #endif
 
 
@@ -6302,72 +6309,76 @@ extern "C" {
 
 //BBS: register default exception handler
 #if BBL_RELEASE_TO_PUBLIC
-//        //MiniDump::EnableAutoDump(true);
-//        auto dmpCallBack = [](const wchar_t* dump_path,
-//                                   const wchar_t* minidump_id,
-//                                   void* context,
-//                                   EXCEPTION_POINTERS* exinfo,
-//                                   MDRawAssertionInfo* assertion,
-//                                   bool succeeded) -> bool {
-//            if (succeeded) {
-//                boost::filesystem::path oldPath(dump_path);
-//                std::string data_dir = wxStandardPaths::Get().GetUserDataDir().ToUTF8().data();
-//                //A.0
-//                std::string version_dir = CREALITYPRINT_VERSION_MAJOR + std::string(".0");
-//                std::string version = std::string(PROJECT_VERSION_EXTRA);
-//                bool        is_alpha = boost::algorithm::icontains(version, "alpha");
-//                if (is_alpha) {
-//					version_dir = version_dir + std::string(" Alpha");
-//				}
-//#ifdef _WIN32
-//                std::string LogFilePath = data_dir + "\\" + SLIC3R_APP_USE_FORDER + "\\" + version_dir + "\\" + "log";
-//#else
-//                std::string LogFilePath = data_dir + "/" + SLIC3R_APP_USE_FORDER + "/" + version_dir + "/" + "log";
-//#endif
-//                if (!LogFilePath.empty() && !boost::filesystem::exists(LogFilePath)) {
-//                    boost::filesystem::create_directories(LogFilePath);
-//                }
-//                boost::filesystem::path logPath(LogFilePath);
-//                oldPath.append(minidump_id).replace_extension(".dmp");
-//
-//                boost::posix_time::ptime now = boost::posix_time::second_clock::local_time();
-//                // 创建一个 time_facet 对象，用于自定义时间格式
-//                boost::posix_time::time_facet* timeFacet = new boost::posix_time::time_facet();
-//                std::stringstream ss;
-//                // 设置时间格式为 yyyyMMDD_hhmmss
-//                timeFacet->format("%Y%m%d_%H%M%S");
-//                ss.imbue(std::locale(std::locale::classic(), timeFacet));
-//                ss << now;
-//
-//                std::string timeStr = ss.str();
-//                std::string processNameStr = timeStr + std::string("_") +  SLIC3R_PROCESS_NAME + std::string("_") + CREALITYPRINT_VERSION + std::string("_") + PROJECT_VERSION_EXTRA + std::string(".dmp");
-//                //boost::filesystem::path newPath(dump_path);
-//                //newPath.append(processNameStr).replace_extension(".dmp");
-//                logPath.append(processNameStr);
-//                //MessageBox(NULL, logPath.wstring().c_str(), minidump_id, MB_OK | MB_ICONINFORMATION);
-//
-//                if (boost::filesystem::exists(oldPath))
-//                {
-//                    boost::filesystem::rename(oldPath, logPath);
-//                    wxString command = "%s.exe \"minidump://file=%s\"";
-//                    command = command.Format(command, SLIC3R_PROCESS_NAME, logPath.wstring().c_str());
-//                    wxExecute(command, wxEXEC_ASYNC);
-//                }
-//
-//                BOOST_LOG_TRIVIAL(info) << "MiniDump succeeded: " << dump_path << ", minidump_id: " << minidump_id;
-//            }
-//            else {
-//                BOOST_LOG_TRIVIAL(error) << "MiniDump failed: " << dump_path << ", minidump_id: " << minidump_id;
-//            }
-//            return true;
-//        };
+#ifdef USE_BREAKPAD
+       //MiniDump::EnableAutoDump(true);
+       auto dmpCallBack = [](const wchar_t* dump_path,
+                                  const wchar_t* minidump_id,
+                                  void* context,
+                                  EXCEPTION_POINTERS* exinfo,
+                                  MDRawAssertionInfo* assertion,
+                                  bool succeeded) -> bool {
+           if (succeeded) {
+               boost::filesystem::path oldPath(dump_path);
+               std::string data_dir = wxStandardPaths::Get().GetUserDataDir().ToUTF8().data();
+               //A.0
+               std::string version_dir = CREALITYPRINT_VERSION_MAJOR + std::string(".0");
+               std::string version = std::string(PROJECT_VERSION_EXTRA);
+               bool        is_alpha = boost::algorithm::icontains(version, "alpha");
+               if (is_alpha) {
+					version_dir = version_dir + std::string(" Alpha");
+				}
+#ifdef _WIN32
+               std::string LogFilePath = data_dir + "\\" + SLIC3R_APP_USE_FORDER + "\\" + version_dir + "\\" + "log";
+#else
+               std::string LogFilePath = data_dir + "/" + SLIC3R_APP_USE_FORDER + "/" + version_dir + "/" + "log";
+#endif
+               if (!LogFilePath.empty() && !boost::filesystem::exists(LogFilePath)) {
+                   boost::filesystem::create_directories(LogFilePath);
+               }
+               boost::filesystem::path logPath(LogFilePath);
+               oldPath.append(minidump_id).replace_extension(".dmp");
+
+               boost::posix_time::ptime now = boost::posix_time::second_clock::local_time();
+               // 创建一个 time_facet 对象，用于自定义时间格式
+               boost::posix_time::time_facet* timeFacet = new boost::posix_time::time_facet();
+               std::stringstream ss;
+               // 设置时间格式为 yyyyMMDD_hhmmss
+               timeFacet->format("%Y%m%d_%H%M%S");
+               ss.imbue(std::locale(std::locale::classic(), timeFacet));
+               ss << now;
+
+               std::string timeStr = ss.str();
+               std::string processNameStr = timeStr + std::string("_") +  SLIC3R_PROCESS_NAME + std::string("_") + CREALITYPRINT_VERSION + std::string("_") + PROJECT_VERSION_EXTRA + std::string(".dmp");
+               //boost::filesystem::path newPath(dump_path);
+               //newPath.append(processNameStr).replace_extension(".dmp");
+               logPath.append(processNameStr);
+               //MessageBox(NULL, logPath.wstring().c_str(), minidump_id, MB_OK | MB_ICONINFORMATION);
+
+               if (boost::filesystem::exists(oldPath))
+               {
+                   boost::filesystem::rename(oldPath, logPath);
+                   wxString command = "%s.exe \"minidump://file=%s\"";
+                   command = command.Format(command, SLIC3R_PROCESS_NAME, logPath.wstring().c_str());
+                   wxExecute(command, wxEXEC_ASYNC);
+               }
+
+               BOOST_LOG_TRIVIAL(info) << "MiniDump succeeded: " << dump_path << ", minidump_id: " << minidump_id;
+           }
+           else {
+               BOOST_LOG_TRIVIAL(error) << "MiniDump failed: " << dump_path << ", minidump_id: " << minidump_id;
+           }
+           return true;
+       };
+#endif
 
         boost::filesystem::path   tempPath = boost::filesystem::path(wxFileName::GetTempDir().ToStdString());
         if (argc == 2 && boost::starts_with(argv_narrow[1], "minidump://file=")) {
         } else {
-            //google_breakpad::ExceptionHandler* pCrashHandel =
-            //    new google_breakpad::ExceptionHandler(tempPath.wstring(), NULL, dmpCallBack, NULL,
-            //                                          google_breakpad::ExceptionHandler::HANDLER_ALL, NULL);
+            #ifdef USE_BREAKPAD
+            google_breakpad::ExceptionHandler* pCrashHandel =
+               new google_breakpad::ExceptionHandler(tempPath.wstring(), NULL, dmpCallBack, NULL,
+                                                     google_breakpad::ExceptionHandler::HANDLER_ALL, NULL);
+            #endif
         }
         
         

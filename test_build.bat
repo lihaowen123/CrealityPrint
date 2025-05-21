@@ -7,9 +7,9 @@ if "%1"=="pack" (
     setlocal ENABLEDELAYEDEXPANSION 
     cd %WP%/deps/build
     for /f "tokens=2-4 delims=/ " %%a in ('date /t') do set build_date=%%c%%b%%a
-    echo packing deps: OrcaSlicer_dep_win64_!build_date!_vs2022.zip
+    echo packing deps: CrealityPrint_dep_win64_!build_date!_vs2022.zip
 
-    %WP%/tools/7z.exe a OrcaSlicer_dep_win64_!build_date!_vs2022.zip OrcaSlicer_dep
+    %WP%/tools/7z.exe a CrealityPrint_dep_win64_!build_date!_vs2022.zip CrealityPrint_dep
     exit /b 0
 )
 
