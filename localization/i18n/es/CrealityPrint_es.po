@@ -9233,7 +9233,6 @@ msgid "Select filament preset"
 msgstr "Seleccionar Filamento Preestablecido"
 
 msgid "Create Filament"
-msgstr "Crear Filamento"
 
 msgid "Create Based on Current Filament"
 msgstr "Crear basándose en el filamento actual"
